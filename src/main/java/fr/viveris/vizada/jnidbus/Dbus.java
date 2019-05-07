@@ -1,0 +1,71 @@
+package fr.viveris.vizada.jnidbus;
+
+import fr.viveris.vizada.jnidbus.bindings.bus.Connection;
+import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
+import fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest.CallSendingRequest;
+import fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest.SignalSendingRequest;
+import fr.viveris.vizada.jnidbus.dispatching.*;
+import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
+import fr.viveris.vizada.jnidbus.message.Call;
+import fr.viveris.vizada.jnidbus.message.Message;
+import fr.viveris.vizada.jnidbus.message.PendingCall;
+
+import java.util.HashMap;
+
+public class Dbus implements AutoCloseable {
+
+    //used only by the JNI to retreive the current context (connection, eventloop, cache, etc...)
+    private long dBusContextPointer;
+
+    private Connection connection;
+    private EventLoop eventLoop;
+    private HashMap<String, Dispatcher> dispatchers;
+
+    /**
+     *
+     * @param type Not nullable, type of bus (Session, System, Starter)
+     * @param busName Not nullable, name of the bus that will be registered to DBus, the name must be unique
+     */
+    public Dbus(BusType type, String busName){
+        this.connection = Connection.createConnection(type,busName);
+        this.eventLoop = new EventLoop(this.connection);
+        this.dispatchers = new HashMap<>();
+        this.dBusContextPointer = this.connection.getdBusContextPointer();
+    }
+
+    public void addMessageHandler(GenericHandler handler){
+        Handler handlerAnnotation = handler.getClass().getAnnotation(Handler.class);
+        HashMap<Criteria, HandlerMethod> criterias = handler.getAvailableCriterias();
+        Dispatcher dispatcher = this.dispatchers.get(handlerAnnotation.path());
+
+        boolean dispatcherCreated = false;
+        if(dispatcher == null){
+            dispatcher = new Dispatcher(handlerAnnotation.path(),this.eventLoop);
+            dispatcherCreated = true;
+        }
+
+        for(Criteria c : criterias.keySet()){
+            dispatcher.addCriteria(handlerAnnotation.interfaceName(),c,criterias.get(c));
+        }
+
+        if(dispatcherCreated){
+            this.eventLoop.addPathHandler(dispatcher);
+            this.dispatchers.put(handlerAnnotation.path(),dispatcher);
+        }
+    }
+
+    public void sendSignal(String path, String interfaceName, String name, Message sig){
+        this.eventLoop.send(new SignalSendingRequest(sig,path,interfaceName,name));
+    }
+
+    public <T extends Message> PendingCall<T> call(Call<?,T> call){
+        PendingCall<T> pending = new PendingCall<>(call.getReturnType());
+        this.eventLoop.send(new CallSendingRequest(call.getParams(),call.getPath(),call.getInterfaceName(),call.getMember(),call.getDestination(),pending));
+        return pending;
+    }
+
+    @Override
+    public void close() throws Exception {
+        this.eventLoop.close();
+    }
+}
