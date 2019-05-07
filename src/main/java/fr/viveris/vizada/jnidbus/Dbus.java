@@ -2,17 +2,21 @@ package fr.viveris.vizada.jnidbus;
 
 import fr.viveris.vizada.jnidbus.bindings.bus.Connection;
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
-import fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest.CallSendingRequest;
-import fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest.SignalSendingRequest;
+import fr.viveris.vizada.jnidbus.message.sendingrequest.CallSendingRequest;
+import fr.viveris.vizada.jnidbus.message.sendingrequest.SignalSendingRequest;
 import fr.viveris.vizada.jnidbus.dispatching.*;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.message.Call;
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
+import fr.viveris.vizada.jnidbus.message.Signal;
 
 import java.util.HashMap;
 
 public class Dbus implements AutoCloseable {
+    static{
+        System.loadLibrary("jnidbus");
+    }
 
     //used only by the JNI to retreive the current context (connection, eventloop, cache, etc...)
     private long dBusContextPointer;
@@ -54,8 +58,8 @@ public class Dbus implements AutoCloseable {
         }
     }
 
-    public void sendSignal(String path, String interfaceName, String name, Message sig){
-        this.eventLoop.send(new SignalSendingRequest(sig,path,interfaceName,name));
+    public void sendSignal(Signal sig){
+        this.eventLoop.send(new SignalSendingRequest(sig.getParams(),sig.getPath(),sig.getInterfaceName(),sig.getMember()));
     }
 
     public <T extends Message> PendingCall<T> call(Call<?,T> call){

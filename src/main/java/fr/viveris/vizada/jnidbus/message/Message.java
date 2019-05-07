@@ -74,5 +74,7 @@ public abstract class Message implements Serializable {
             value = "",
             fields = ""
     )
-    private static class EmptyMessage extends Message{ }
+    public static class EmptyMessage extends Message{
+        private EmptyMessage(){}
+    }
 }

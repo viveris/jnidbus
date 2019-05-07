@@ -1,4 +1,4 @@
-package fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest;
+package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;

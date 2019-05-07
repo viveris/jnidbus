@@ -1,19 +1,13 @@
 package fr.viveris.vizada.jnidbus.message;
 
-public abstract class Call<In extends Message,Out extends Message> {
-    private DbusMethodCall annotation;
-    private Class<Out> returnType;
+public abstract class Signal<In extends Message> {
+    private DbusSignal annotation;
     private In params;
 
-    public Call(In params, Class<Out> returnType){
-        this.annotation = this.getClass().getAnnotation(DbusMethodCall.class);
+    public Signal(In params){
+        this.annotation = this.getClass().getAnnotation(DbusSignal.class);
         if(this.annotation== null) throw new IllegalStateException("A DBus method call must be annotated with DbusMethodCall");
-        this.returnType = returnType;
         this.params = params;
-    }
-
-    public String getDestination(){
-        return this.annotation.destination();
     }
 
     public String getPath(){
@@ -26,10 +20,6 @@ public abstract class Call<In extends Message,Out extends Message> {
 
     public String getMember(){
         return this.annotation.member();
-    }
-
-    public Class<Out> getReturnType() {
-        return returnType;
     }
 
     public In getParams() {

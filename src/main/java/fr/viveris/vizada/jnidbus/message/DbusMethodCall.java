@@ -4,7 +4,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MethodCall {
+public @interface DbusMethodCall {
     String destination();
     String path();
     String interfaceName();

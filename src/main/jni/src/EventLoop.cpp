@@ -119,9 +119,6 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     DBusMessage* msg = dbus_message_new_method_return(callMsg);
     dbus_message_unref(callMsg);
 
-    DBusError err;
-    dbus_error_init(&err);
-
     DBusMessageIter args;
     dbus_message_iter_init_append(msg,&args);
     serialize(ctx,messageJVM,&args);
@@ -164,9 +161,6 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     context* ctx = (context*) ctxPtr;
     DBusConnection* conn = ctx->connection;
 
-    DBusError err;
-    dbus_error_init(&err);
-
     //transform them into native types
     const char* pathNative = env->GetStringUTFChars(pathJVM, 0);
     const char* typeNative = env->GetStringUTFChars(interfaceJVM, 0);
@@ -200,8 +194,6 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendCall
   (JNIEnv * env, jobject target, jlong ctxPtr, jstring pathJVM, jstring interfaceJVM, jstring memberJVM, jobject messageJVM, jstring destJVM, jobject pendingCall){
     context* ctx = (context*) ctxPtr;
-    DBusError err;
-    dbus_error_init(&err);
 
     //get the dbus connection from pointer
     DBusConnection* conn = ctx->connection;
@@ -258,8 +250,6 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_add
   std::string match = "type='signal',path='";
   match += pathNative;
   match += "'";
-  printf("match added : %s\n",match.c_str());
-  fflush(stdout);
   dbus_bus_add_match(ctx->connection,match.c_str(),NULL);
 
   env->ReleaseStringUTFChars(pathJVM,pathNative);

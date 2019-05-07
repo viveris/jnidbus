@@ -40,6 +40,11 @@ public class PendingCall<T extends Serializable> {
         }
     }
 
+    public void fail(String errorName, String message){
+        Exception exc = new Exception(message);
+        this.listener.error(exc);
+    }
+
     public interface Listener<T>{
         void notify(T value);
         void error(Throwable t);

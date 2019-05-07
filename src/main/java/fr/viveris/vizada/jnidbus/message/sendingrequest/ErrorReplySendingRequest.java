@@ -1,4 +1,4 @@
-package fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest;
+package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
 public class ErrorReplySendingRequest extends AbstractSendingRequest {
     private Throwable error;

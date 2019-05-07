@@ -1,6 +1,6 @@
 package fr.viveris.vizada.jnidbus.bindings.bus;
 
-import fr.viveris.vizada.jnidbus.bindings.bus.sendingrequest.*;
+import fr.viveris.vizada.jnidbus.message.sendingrequest.*;
 import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;

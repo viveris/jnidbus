@@ -76,15 +76,32 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
   dbus_message_iter_init(msg, &rootIter);
   jobject jvmObject = unserialize(ctx,&rootIter);
 
-  env->CallVoidMethod(
-    pCtx->pending_call,
-    env->GetMethodID(
-      find_class(ctx,"fr/viveris/vizada/jnidbus/message/PendingCall"), 
-      "notify", 
-      "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;)V"
-    ),
-    jvmObject
-  );
+  if(dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_ERROR){
+    DBusError err;
+    dbus_error_init(&err);
+    dbus_set_error_from_message(&err,msg);
+    env->CallVoidMethod(
+      pCtx->pending_call,
+      env->GetMethodID(
+        find_class(ctx,"fr/viveris/vizada/jnidbus/message/PendingCall"), 
+        "fail", 
+        "(Ljava/lang/String;Ljava/lang/String;)V"
+      ),
+      env->NewStringUTF(err.name),
+      env->NewStringUTF(err.message)
+    );
+    dbus_error_free(&err);
+  }else{
+    env->CallVoidMethod(
+      pCtx->pending_call,
+      env->GetMethodID(
+        find_class(ctx,"fr/viveris/vizada/jnidbus/message/PendingCall"), 
+        "notify", 
+        "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;)V"
+      ),
+      jvmObject
+    );
+  }
 
   //free resources
   dbus_message_unref(msg);
