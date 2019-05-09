@@ -1,20 +1,24 @@
 #include "./headers/context.h"
 
 jclass find_class(context* context, const char* name){
-    //get from cache
+    //try to get from cache
     std::string nameString = std::string(name);
     jclass classJVM = context->class_cache[nameString];
-    //if class not found in cache, fetch from the JVM
+
+    //if class not found, fetch from the JVM
     if(classJVM == NULL){
         JNIEnv* env;
         get_env(context,&env);
         classJVM = (jclass) env->NewGlobalRef(env->FindClass(name));
         context->class_cache[nameString] = classJVM;
     }
+
     return classJVM;
 }
 
 void get_env(context* context, JNIEnv** env){
+    // it is safe to call attachThread multiple times as it will do nothing when the thread
+    //is already attached beside giving us the JNIEnv
     context->vm->AttachCurrentThread((void **) env,NULL);
 }
 

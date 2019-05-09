@@ -13,8 +13,15 @@ DBusObjectPathVTable dbus_handler_struct = {
     .message_function = handle_dispatch
 };
 
-/* This method should setup epoll and the array contianing the file descriptors.
-
+/**
+ * This method setup epoll, the wakeup FD and register watch functions to DBus. Watch functions are an interface
+ * that allows the developer to build an event loop with any technology it wants (select, epoll, kqueue, etc...).
+ * 
+ * As we don't register any timeout functions, DBus will not be able to detect and manage timeout, this will be done
+ * on the JVM side (we might change this at some point but it is not worth the effort right now).
+ * 
+ * On the JVM side, any call made to the event loop while this function was not executed will block and wait. 
+ * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    setup
  * Signature: ()Z
@@ -26,9 +33,15 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
 
     //create epoll instance
     ctx->epollFD = epoll_create1(0);
+    if(ctx->epollFD == -1){
+      env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not create the epoll FD");
+    }
 
     //create wakeup file descriptor
     ctx->wakeupFD = eventfd(0,EFD_NONBLOCK);
+    if(ctx->wakeupFD == -1){
+      env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not create the epoll FD");
+    }
 
     //create epoll struct in which it will put the selected file descriptors
     epoll_event wakeupStruct;
@@ -39,15 +52,11 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
     wakeupStruct.events = EPOLLIN;
     int error = epoll_ctl(ctx->epollFD,EPOLL_CTL_ADD,ctx->wakeupFD,&wakeupStruct);
     if(error == -1){
-        //todo, throw
+        env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not register the wakeup FD to epoll");
     }
 
     //put event loop in context
     ctx->eventLoop = env->NewGlobalRef(target);
-
-    //add global handler, we pass it the JVM environment as a param. We don't need to worry about attaching the
-    //thread to the JVM as the thread was created by it and that the handler will be called on this same thread.
-    //dbus_connection_add_filter(ctx->connection,handle_message,ctx,NULL);
 
     //add watch handlers
     dbus_connection_set_watch_functions(ctx->connection,add_watch,remove_watch,toggle_watch,ctx,NULL);
@@ -55,50 +64,63 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
     return JNI_TRUE;
   }
 
-/*
+/**
+ * 
+ * Core method of the event loop. A tick will call epoll_wait and wait for events. It is possible to
+ * wake epoll by using the wakeup file descriptor.
+ * 
+ * When a wakeup call is made, we will simply empty the FD and proceed. If any other FD are selected,
+ * get the DBus watch pointer corresponding and notify DBus a watch state has changed, which will
+ * make DBus check for data and dispatch parsed message to the correct object path handler.
+ * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    tick
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tick
   (JNIEnv * env, jobject target,jlong ctxPtr){
+    //get context
     context* ctx = (context*) ctxPtr;
     epoll_event* events = ctx->epollStruct;
 
+    //wait for event
     int numberSelected = epoll_wait(ctx->epollFD,events,EPOLL_MAX_EVENTS,-1);
+
     //iterate through what epoll selected
     for (int i = 0; i < numberSelected; i++){
-        if(events[i].data.fd == ctx->wakeupFD){
-          //wakeup call detected, empty the event FD and proceed
-          uint64_t u;
-          read(events[i].data.fd,&u,sizeof(uint64_t));
-          continue;
-        }else{
-          //a change have been detected on a FD, dispatch to dbus
-          unsigned int flags = 0;
-          unsigned int epollFlages = events[i].events;
-          DBusWatch* watch = (DBusWatch*) events[i].data.ptr;
-          int fd = dbus_watch_get_unix_fd(watch);
+      if(events[i].data.fd == ctx->wakeupFD){
+        //wakeup call detected, empty the event FD and proceed
+        uint64_t u;
+        read(events[i].data.fd,&u,sizeof(uint64_t));
+        continue;
+      }else{
+        //a change have been detected on a FD, dispatch to dbus
+        unsigned int flags = 0;
+        unsigned int epollFlages = events[i].events;
+        DBusWatch* watch = (DBusWatch*) events[i].data.ptr;
+        int fd = dbus_watch_get_unix_fd(watch);
 
-          if (epollFlages & EPOLLIN)  flags |= DBUS_WATCH_READABLE;
-          if (epollFlages & EPOLLOUT) flags |= DBUS_WATCH_WRITABLE;
-          if (epollFlages & EPOLLHUP) flags |= DBUS_WATCH_HANGUP;
-          if (epollFlages & EPOLLERR) flags |= DBUS_WATCH_ERROR;
-          if(dbus_watch_get_enabled(watch)){
-            while (!dbus_watch_handle(watch, flags)) {
-              //TODO, change that, maybe a if and a throw?
-            }
-
-            //dispatch all the detected events
-            dbus_connection_ref(ctx->connection);
-            while (dbus_connection_dispatch(ctx->connection) == DBUS_DISPATCH_DATA_REMAINS);
-            dbus_connection_unref(ctx->connection);
-          }
+        if (epollFlages & EPOLLIN)  flags |= DBUS_WATCH_READABLE;
+        if (epollFlages & EPOLLOUT) flags |= DBUS_WATCH_WRITABLE;
+        if (epollFlages & EPOLLHUP) flags |= DBUS_WATCH_HANGUP;
+        if (epollFlages & EPOLLERR) flags |= DBUS_WATCH_ERROR;
+        
+        if (!dbus_watch_handle(watch, flags)) {
+          env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"More memory is needed but non is available");
         }
+
+        //dispatch all the detected events
+        while (dbus_connection_dispatch(ctx->connection) == DBUS_DISPATCH_DATA_REMAINS);
+      }
     }
   }
 
-/*
+/**
+ * 
+ * Write arbitrary data in the wakeup file descriptor, which will unblock the current (or next) epoll_wait call
+ * As we use an eventfd we don't need to care about whether data is already in the FD or not, an eventFD will add
+ * the written values to the one stored in the FD. Fore more info, refer to the man page of "eventfd"
+ * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    wakeup
  * Signature: ()V
@@ -106,11 +128,18 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tic
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_wakeup
   (JNIEnv * env, jobject target, jlong ctxPtr){
     context* ctx = (context*) ctxPtr;
-    //write a random value
     uint64_t u = 1;
     size_t written = write(ctx->wakeupFD,&u,sizeof(uint64_t));
   }
 
+/**
+ * 
+ * Send the result of a call back to the caller
+ * 
+ * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Method:    sendReply
+ * Signature: (JLfr/viveris/vizada/jnidbus/message/Message;J)V
+ */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendReply
   (JNIEnv * env, jobject target, jlong ctxPtr, jobject messageJVM, jlong msgPointer){
     context* ctx = (context*) ctxPtr;
@@ -123,7 +152,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     dbus_message_iter_init_append(msg,&args);
     serialize(ctx,messageJVM,&args);
     if(env->ExceptionOccurred()){
-      //TODO throw
+      //do nothing, free resources and let the JVM throw the exception in the java code
     }else{
       dbus_uint32_t msgSerial = 0;
       if (!dbus_connection_send(conn, msg, &msgSerial)) {
@@ -134,6 +163,13 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     dbus_message_unref(msg);
   }
 
+/**
+ * Send an error to the caller, the error name and message are generated from the thrown exception in the java code
+ * 
+ * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Method:    sendReplyError
+ * Signature: (JJLjava/lang/String;Ljava/lang/String;)V
+ */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendReplyError
   (JNIEnv * env, jobject target, jlong ctxPtr, jlong msgPointer, jstring errorCodeJVM, jstring errorMessageJVM){
     context* ctx = (context*) ctxPtr;
@@ -155,6 +191,14 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
 
 }
 
+/**
+ *
+ * Send a Signal on the Bus
+ * 
+ * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Method:    sendSignal
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/message/Message;)V
+ */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendSignal
   (JNIEnv * env, jobject target, jlong ctxPtr, jstring pathJVM, jstring interfaceJVM, jstring memberJVM, jobject messageJVM){
 
@@ -172,7 +216,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     dbus_message_iter_init_append(msg,&args);
     serialize(ctx,messageJVM,&args);
     if(env->ExceptionOccurred()){
-      //TODO throw
+      //do nothing
     }else{
       dbus_uint32_t msgSerial = 0;
       if (!dbus_connection_send(conn, msg, &msgSerial)) {
@@ -186,7 +230,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     dbus_message_unref(msg);
 }
 
-/*
+/**
+ * 
+ * Asynchronously call a DBus method. The function will use the given JVM PendingCall to DBus which will notify
+ * it when its state changes
+ * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
  * Method:    sendEvent
  * Signature: (Lfr/viveris/vizada/jnidbus/bindings/message/Event;)Z
@@ -198,7 +246,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     //get the dbus connection from pointer
     DBusConnection* conn = ctx->connection;
 
-    //transform them into native types
+    //transform params into native types
     const char* pathNative = env->GetStringUTFChars(pathJVM, 0);
     const char* typeNative = env->GetStringUTFChars(interfaceJVM, 0);
     const char* nameNative = env->GetStringUTFChars(memberJVM, 0);
@@ -210,12 +258,13 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     dbus_message_iter_init_append(msg,&args);
     serialize(ctx,messageJVM,&args);
     if(env->ExceptionOccurred()){
-      //TODO throw
+      //do nothing
     }else{
       DBusPendingCall* res;
       if (!dbus_connection_send_with_reply(conn,msg,&res,-1)) {
         env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"Sending failed (probably caused by an out of memory)");
       }else{
+        //give the JVM PendingCall to DBus for later notification
         pending_call_context* callContext = (pending_call_context*) malloc(sizeof(pending_call_context));
         callContext->pending_call = env->NewGlobalRef(pendingCall);
         callContext->ctx = ctx;
@@ -232,7 +281,12 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
     dbus_message_unref(msg);
 }
 
-/*
+/**
+ * 
+ * Register a new Dispatcher to DBus and add a match to receive signal for this object path.
+ * Please note that with the current implementation, a dispatcher can be notified for signals that
+ * do not have handlers on the JVM side, this might change in the future.
+ * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    addPathHandler
  * Signature: (JLjava/lang/String;Lfr/viveris/vizada/jnidbus/dispatching/Dispatcher;)V

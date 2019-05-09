@@ -2,6 +2,7 @@ package Common;
 
 import fr.viveris.vizada.jnidbus.BusType;
 import fr.viveris.vizada.jnidbus.Dbus;
+import fr.viveris.vizada.jnidbus.exception.ConnectionException;
 import org.junit.After;
 import org.junit.Before;
 
@@ -20,7 +21,7 @@ public abstract class DBusTestCase {
      * unique as DBus needs a few millis to free a bus name, meaning each test would be delayed, which is not acceptable
      */
     @Before
-    public void setup(){
+    public void setup() throws ConnectionException {
         SecureRandom random = new SecureRandom();
         this.senderBusName = "fr.viveris.vizada.jnidbus.test.sender."+generateRandomString();
         this.receiverBusName = "fr.viveris.vizada.jnidbus.test.sender."+generateRandomString();

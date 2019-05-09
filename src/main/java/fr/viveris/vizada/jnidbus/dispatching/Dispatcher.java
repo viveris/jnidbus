@@ -1,6 +1,7 @@
 package fr.viveris.vizada.jnidbus.dispatching;
 
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
+import fr.viveris.vizada.jnidbus.exception.DBusException;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.ErrorReplySendingRequest;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.ReplySendingRequest;
 import fr.viveris.vizada.jnidbus.message.Message;
@@ -37,9 +38,10 @@ public class Dispatcher {
     }
 
     /**
-     * Method called by JNI when a message is received
+     * Method called by JNI when a message is received. Will return true if the message was a signal or a call that was handled, will return false if the message
+     * was a call that did not have any handler registered
      */
-    public void dispatch(DBusObject args, String type, String member, long msgPointer) throws IllegalAccessException, InstantiationException {
+    public boolean dispatch(DBusObject args, String type, String member, long msgPointer) throws IllegalAccessException, InstantiationException {
         ArrayList<Criteria> availableHandlers = this.handlersCriterias.get(type);
         Criteria requestCriteria;
         if(msgPointer == 0){
@@ -48,22 +50,21 @@ public class Dispatcher {
             requestCriteria = new Criteria(member,args.getSignature(),null, Criteria.HandlerType.METHOD);
         }
         if(availableHandlers == null){
-            //TODO: Log that a message was received but not dispatched
-            return;
+            return msgPointer == 0;
         }
 
         for(Criteria c: availableHandlers){
             if(c.equals(requestCriteria)){
                 //match found, try to unserialize
                 HandlerMethod handler = this.handlers.get(c);
-                Serializable param;
-                if(args.getSignature().equals("")){
-                    param = Message.EMPTY;
-                }else{
-                    param = handler.getParamType().newInstance();
-                    param.unserialize(args);
-                }
                 try{
+                    Serializable param;
+                    if(args.getSignature().equals("")){
+                        param = Message.EMPTY;
+                    }else{
+                        param = handler.getParamType().newInstance();
+                        param.unserialize(args);
+                    }
                     Message returnObject = (Message) handler.call(param);
                     if(returnObject != null){
                         this.eventLoop.send(new ReplySendingRequest(returnObject,msgPointer));
@@ -75,11 +76,13 @@ public class Dispatcher {
                         //TODO: log error
                     }
                 }
-                return;
+                return true;
             }
         }
 
-        //TODO: Log that a message was received but not dispatched
+        //if the message was a signal, the fact that no handlers are registered is not a problem, but if the message is a call we must
+        //notify the caller that the method does not exists
+        return msgPointer == 0;
     }
 
     public String getPath() {

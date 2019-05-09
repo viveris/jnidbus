@@ -1,5 +1,6 @@
 package fr.viveris.vizada.jnidbus.message;
 
+import fr.viveris.vizada.jnidbus.exception.MessageSignatureMismatch;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 import fr.viveris.vizada.jnidbus.serialization.DBusType;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
@@ -8,7 +9,7 @@ import fr.viveris.vizada.jnidbus.serialization.SupportedTypes;
 import java.lang.reflect.Method;
 
 public abstract class Message implements Serializable {
-    public static final Message EMPTY = new EmptyMessage();
+    public static final EmptyMessage EMPTY = new EmptyMessage();
 
 
     @Override
@@ -42,12 +43,12 @@ public abstract class Message implements Serializable {
     }
 
     @Override
-    public void unserialize(DBusObject obj) {
+    public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
         DBusType type = this.getClass().getAnnotation(DBusType.class);
         Class<? extends Message> clazz = this.getClass();
 
         if(type == null) throw new IllegalStateException("No DBusType annotation found");
-        if(!type.value().equals(obj.getSignature())) throw new IllegalArgumentException("Signature mismatch, unserialization impossible");
+        if(!type.value().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+type.value()+" but got "+obj.getSignature());
 
         for (int i = 0; i < type.value().length(); i++){
             char c = type.value().charAt(i);

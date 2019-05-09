@@ -1,6 +1,7 @@
 package Signal;
 
 import Common.DBusTestCase;
+import Common.StringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -8,7 +9,6 @@ import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.message.DbusSignal;
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.Signal;
-import fr.viveris.vizada.jnidbus.serialization.DBusType;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -80,7 +80,7 @@ public class BasicSignalTest extends DBusTestCase {
             interfaceName = "Signal.BasicSignalTest",
             member = "emptySignal"
     )
-    public static class EmptySignal extends Signal<Message>{
+    public static class EmptySignal extends Signal<Message.EmptyMessage>{
         public EmptySignal() {
             super(Message.EMPTY);
         }
@@ -105,21 +105,6 @@ public class BasicSignalTest extends DBusTestCase {
     public static class StringSignal extends Signal<StringMessage>{
         public StringSignal(StringMessage msg) {
             super(msg);
-        }
-    }
-
-    @DBusType(
-            value = "s",
-            fields = "string"
-    )
-    public static class StringMessage extends Message{
-        private String string;
-
-        public String getString() {
-            return string;
-        }
-        public void setString(String string) {
-            this.string = string;
         }
     }
 }

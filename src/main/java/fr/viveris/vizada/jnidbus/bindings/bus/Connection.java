@@ -1,8 +1,7 @@
 package fr.viveris.vizada.jnidbus.bindings.bus;
 
 import fr.viveris.vizada.jnidbus.BusType;
-
-import java.io.IOException;
+import fr.viveris.vizada.jnidbus.exception.ConnectionException;
 
 public class Connection {
 
@@ -27,7 +26,7 @@ public class Connection {
      * @param type
      * @return
      */
-    public static native Connection createConnection(BusType type, String busName);
+    public static native Connection createConnection(BusType type, String busName) throws ConnectionException;
 
     private native void closeNative(long contextPtr);
 

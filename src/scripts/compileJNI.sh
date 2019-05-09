@@ -19,7 +19,7 @@ do
     $JAVAH -d ./h -jni -classpath ./java $FILE
 done
 
-echo "* filtering empty headers"
+echo "* filtering empty headers (might display an error if all headers contain functions)"
 find ./h/* -type f -print0 | xargs --null grep -Z -L 'JNIEXPORT' | xargs --null rm
 
 echo "* moving files in jni folder"

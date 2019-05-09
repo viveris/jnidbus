@@ -9,6 +9,10 @@
 using namespace std;
 
 /*
+ * Create a new DBus connection. The created connection is private, meaning that one process can create multiple
+ * DBus connection instead of sharing only one, if the developer wants only one open connection, it should ensure it
+ * himself. The method will throw a ConnectionException and return null if something goes wrong.
+ *
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
  * Method:    createConnection
  * Signature: (Lfr/viveris/vizada/jnidbus/BusType;)Lfr/viveris/vizada/jnidbus/bindings/bus/Connection;
@@ -18,8 +22,6 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
       //init context
       context* ctx = new context;
       env->GetJavaVM(&ctx->vm);
-
-      jclass exc = find_class(ctx,"java/lang/IllegalStateException");
 
       //get the bus type needed
       jmethodID getBusTypeMethod = env->GetMethodID(find_class(ctx,"fr/viveris/vizada/jnidbus/BusType"), "name", "()Ljava/lang/String;");
@@ -35,7 +37,7 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
       }else if(strcmp(value,"STARTER") == 0){
          type = DBUS_BUS_STARTER;
       }else{
-         env->ThrowNew(exc,"Unknown bus type");
+         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),"Unknown bus type");
          return NULL;
       }
 
@@ -46,7 +48,7 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
       DBusConnection* conn;
       conn = dbus_bus_get_private(type, &err);
       if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(exc,err.message);
+         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err); 
          return NULL;
       }
@@ -59,18 +61,13 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
 
       int ret = dbus_bus_request_name(conn, busNameConverted, DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
       if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(exc,err.message);
+         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err);
-         return NULL;
-      }
-      if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) { 
-         env->ThrowNew(exc,"Could not apply bus name");
          return NULL;
       }
 
-      if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(exc,err.message);
-         dbus_error_free(&err);
+      if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) { 
+         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),"Could not apply bus name");
          return NULL;
       }
 
@@ -90,6 +87,8 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
   }
 
 /*
+ * Close the DBus connection and free any resource used
+ *
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
  * Method:    closeNative
  * Signature: ()V
@@ -97,9 +96,6 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection_closeNative
   (JNIEnv * env, jobject target, jlong contextPtr){
      context* ctx = (context*) contextPtr;
-     //get exception class
-     jclass exc = find_class(ctx, "java/lang/IllegalStateException");
-
      //get class of the event
       jclass connectionClass = find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/Connection");
 
@@ -112,7 +108,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection_cl
       dbus_bus_release_name(conn,ctx->bus_name,&err);
 
       if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(exc,err.message);
+         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err); 
          return;
       }

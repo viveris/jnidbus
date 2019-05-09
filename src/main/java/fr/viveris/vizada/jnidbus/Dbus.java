@@ -2,6 +2,7 @@ package fr.viveris.vizada.jnidbus;
 
 import fr.viveris.vizada.jnidbus.bindings.bus.Connection;
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
+import fr.viveris.vizada.jnidbus.exception.ConnectionException;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.CallSendingRequest;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.SignalSendingRequest;
 import fr.viveris.vizada.jnidbus.dispatching.*;
@@ -30,7 +31,7 @@ public class Dbus implements AutoCloseable {
      * @param type Not nullable, type of bus (Session, System, Starter)
      * @param busName Not nullable, name of the bus that will be registered to DBus, the name must be unique
      */
-    public Dbus(BusType type, String busName){
+    public Dbus(BusType type, String busName) throws ConnectionException {
         this.connection = Connection.createConnection(type,busName);
         this.eventLoop = new EventLoop(this.connection);
         this.dispatchers = new HashMap<>();

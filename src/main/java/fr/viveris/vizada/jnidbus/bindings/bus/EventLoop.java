@@ -1,5 +1,7 @@
 package fr.viveris.vizada.jnidbus.bindings.bus;
 
+import fr.viveris.vizada.jnidbus.exception.DBusException;
+import fr.viveris.vizada.jnidbus.exception.EventLoopSetupException;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.*;
 import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
 import fr.viveris.vizada.jnidbus.message.Message;
@@ -40,7 +42,12 @@ public class EventLoop implements Closeable {
         this.thread = new Thread(new Runnable() {
             @Override
             public void run() {
-                EventLoop.this.run();
+                try {
+                    EventLoop.this.run();
+                } catch (EventLoopSetupException e) {
+                    EventLoop.this.isClosed.set(true);
+                    EventLoop.this.startBarrier.countDown();
+                }
             }
         });
         this.thread.setName("DBus event loop");
@@ -50,7 +57,7 @@ public class EventLoop implements Closeable {
     /**
      * This method will take care of setting up epoll and all the timeout and watch functions of dbus.
      */
-    private native boolean setup(long contextPtr);
+    private native boolean setup(long contextPtr) throws EventLoopSetupException;
 
     /**
      * Will call epoll, wait for events and dispatch those events to dbus. we can interupt an ongoing tick by calling the wakeup() function.
@@ -69,7 +76,7 @@ public class EventLoop implements Closeable {
 
     private native void addPathHandler(long contextPtr, String path, Dispatcher handler);
 
-    private void run(){
+    private void run() throws EventLoopSetupException {
         this.setup(this.dBusContextPointer);
         this.isClosed.set(false);
         this.startBarrier.countDown();
@@ -88,12 +95,20 @@ public class EventLoop implements Closeable {
                 if(abstarctRequest instanceof CallSendingRequest){
                     CallSendingRequest req = (CallSendingRequest)abstarctRequest;
                     this.sendCall(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage(),req.getDest(),req.getPendingCall());
+
                 }else if(abstarctRequest instanceof ErrorReplySendingRequest){
                     ErrorReplySendingRequest req = (ErrorReplySendingRequest)abstarctRequest;
-                    this.sendReplyError(this.dBusContextPointer,req.getMessagePointer(),req.getError().getClass().getName(),req.getError().getMessage());
+                    if(req.getError() instanceof DBusException){
+                        DBusException cast = (DBusException)req.getError();
+                        this.sendReplyError(this.dBusContextPointer,req.getMessagePointer(),cast.getCode(),cast.getMessage());
+                    }else{
+                        this.sendReplyError(this.dBusContextPointer,req.getMessagePointer(),req.getError().getClass().getName(),req.getError().getMessage());
+                    }
+
                 }else if(abstarctRequest instanceof ReplySendingRequest){
                     ReplySendingRequest req = (ReplySendingRequest)abstarctRequest;
                     this.sendReply(this.dBusContextPointer,req.getMessage(),req.getMessagePointer());
+
                 }else if(abstarctRequest instanceof SignalSendingRequest){
                     SignalSendingRequest req = (SignalSendingRequest)abstarctRequest;
                     this.sendSignal(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage());

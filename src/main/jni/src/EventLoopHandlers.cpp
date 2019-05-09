@@ -1,5 +1,11 @@
 #include "./headers/event_loop_handlers.h"
 
+/**
+ * 
+ * Method called when DBus receive a new message and want to dispatch it. This function will call the JVM dispatcher
+ * registered for the current object path
+ * 
+ */
 DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, void* ctxPtr){
   //ref the message to notify dbus we are processing it
   dbus_message_ref(msg);
@@ -26,13 +32,13 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
     msgPointer = (uintptr_t) msg;
   }
 
-  //Call the JVM handler method
-  env->CallVoidMethod(
+  //Call the JVM handler method, the method will return false if the message was a called and that no handler were found, true instead
+  jboolean wasHandled = env->CallBooleanMethod(
     handlerCtx->dispatcher,
     env->GetMethodID(
       find_class(ctx,"fr/viveris/vizada/jnidbus/dispatching/Dispatcher"), 
       "dispatch", 
-      "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;Ljava/lang/String;Ljava/lang/String;J)V"
+      "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;Ljava/lang/String;Ljava/lang/String;J)Z"
     ),
     jvmObject,
     env->NewStringUTF(interface),
@@ -40,13 +46,23 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
     msgPointer
   );
 
-  if(msgPointer == 0){
+  //if the message was a signal or a call not dispatched, free it
+  if(msgPointer == 0 || wasHandled == JNI_FALSE){
     dbus_message_unref(msg);
   }
 
-  return DBUS_HANDLER_RESULT_HANDLED;
+  if(wasHandled == JNI_FALSE){
+    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
+  }else{
+    return DBUS_HANDLER_RESULT_HANDLED;
+  }
 }
 
+/**
+ * 
+ * Called when unregistering a dispatched, the current implementation never do that but might in the future
+ * 
+ */
 void handle_dispatch_unregister(DBusConnection* connection, void* ctxPtr){
   handler_context* handlerCtx = (handler_context*) ctxPtr;
   context* ctx = (context*) handlerCtx->ctx;
@@ -58,6 +74,12 @@ void handle_dispatch_unregister(DBusConnection* connection, void* ctxPtr){
   free(handlerCtx);
 }
 
+/**
+ * 
+ * Function called when a pending call state changed (with an error or a success). The function will call the PendingCall JVM
+ * object and delegate processing to it
+ * 
+ */
 void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
   pending_call_context* pCtx = (pending_call_context*) ctxPtr;
   context* ctx = pCtx->ctx;
@@ -67,15 +89,10 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
   DBusMessage* msg = dbus_pending_call_steal_reply(pending);
 
   if(msg == NULL){
-    //TODO throw
+    env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"Pending call notified but message was null");
   }
 
-  //TODO: check if reply is an error
-
-  DBusMessageIter rootIter;
-  dbus_message_iter_init(msg, &rootIter);
-  jobject jvmObject = unserialize(ctx,&rootIter);
-
+  //if the message is an error, call the fail() method of the object
   if(dbus_message_get_type(msg) == DBUS_MESSAGE_TYPE_ERROR){
     DBusError err;
     dbus_error_init(&err);
@@ -91,7 +108,12 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
       env->NewStringUTF(err.message)
     );
     dbus_error_free(&err);
+  //else, unserialize and call the notify() method  
   }else{
+    DBusMessageIter rootIter;
+    dbus_message_iter_init(msg, &rootIter);
+    jobject jvmObject = unserialize(ctx,&rootIter);
+
     env->CallVoidMethod(
       pCtx->pending_call,
       env->GetMethodID(
@@ -110,26 +132,23 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
   free(pCtx);
 }
 
+/**
+ * 
+ * Called by DBus when it wants to add a file descriptor to the event loop. DBus might also call this method when
+ * it wants to update the event flag.
+ * 
+ */ 
 dbus_bool_t add_watch(DBusWatch *w, void *data){
     //get the JVM environment
     context* ctx = (context*) data;
-    JNIEnv* env;
-    get_env(ctx,&env);
-
-    //get epoll fd from JVM object
 
     // we always want to know if the socket was closed
     short cond = EPOLLHUP | EPOLLERR;
     int fd = dbus_watch_get_unix_fd(w);
     unsigned int flags = dbus_watch_get_flags(w);
 
-    
-    if(flags & DBUS_WATCH_READABLE){
-        cond |= EPOLLIN;
-    }
-    if(flags & DBUS_WATCH_WRITABLE){
-        cond |= EPOLLOUT;
-    }
+    if(flags & DBUS_WATCH_READABLE) cond |= EPOLLIN;
+    if(flags & DBUS_WATCH_WRITABLE) cond |= EPOLLOUT;
 
     //register to epoll and store a pointer to the watch in the epoll struct. Beware, event.data is a union struct
     //so only one field can be used at a time, meaning we are storing only the watch pointer (which contains the
@@ -144,20 +163,54 @@ dbus_bool_t add_watch(DBusWatch *w, void *data){
         if(errno == EEXIST){
             error = epoll_ctl(ctx->epollFD,EPOLL_CTL_MOD,fd,&event);
             return 1;
+        }else{
+          return -1;
         }
     }
 
     return 1;
 }
 
+/**
+ * 
+ * Called when DBus closed a file descriptor and want to unregister it from the event loop
+ * 
+ */
 void remove_watch(DBusWatch *w, void *data){
   context* ctx = (context*) data;
-  JNIEnv* env;
-  get_env(ctx,&env);
 
   epoll_ctl(ctx->epollFD,EPOLL_CTL_DEL,dbus_watch_get_unix_fd(w),NULL);
 }
 
+/**
+ * 
+ * Sometimes DBus wants to temporarily disable a file descriptor, there is two ways to handle this case, 
+ * either call dbus_watch_get_enabled on every watch at every tick (not very efficient) or use the toggle
+ * watch function to suspend the file descritpro. In our case we set the vent flag to 0 when the watch is
+ * disabled
+ * 
+ */
 void toggle_watch(DBusWatch *w, void *data){
-  //TODO set the epoll flag at 0 when they are not and set them to the correct value when they are zeroed
+  short cond;
+  //if the watch is enabled, get the events we want to register
+  if(dbus_watch_get_enabled(w)){
+    cond = EPOLLHUP | EPOLLERR;
+    unsigned int flags = dbus_watch_get_flags(w);
+    
+    if(flags & DBUS_WATCH_READABLE) cond |= EPOLLIN;
+    if(flags & DBUS_WATCH_WRITABLE) cond |= EPOLLOUT;
+  //if not enabled, set the event flag to 0, which will disable the FD to epoll  
+  }else{
+    cond = 0;
+  }
+
+  //get the JVM environment
+  context* ctx = (context*) data;
+  int fd = dbus_watch_get_unix_fd(w);
+
+  epoll_event event;
+  event.events = cond;
+  event.data.ptr = w;
+
+  epoll_ctl(ctx->epollFD,EPOLL_CTL_MOD,fd,&event);
 }
