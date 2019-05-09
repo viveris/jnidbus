@@ -18,27 +18,49 @@ void serialize(context* ctx, jobject message, DBusMessageIter* container){
         //get signature and values, then transfer them to DBus
         jstring dbusTypesJVM = (jstring) env->CallObjectMethod(serialized, env->GetMethodID(dbusObjectClass, "getSignature", "()Ljava/lang/String;"));
         jobjectArray dbusValues = (jobjectArray) env->CallObjectMethod(serialized, env->GetMethodID(dbusObjectClass, "getValues", "()[Ljava/lang/Object;"));
-        const char *dbusTypesNative = env->GetStringUTFChars(dbusTypesJVM, 0);
-        int size = (int) env->GetStringLength(dbusTypesJVM);
-
-        //cut the signature in single char and transform the JVM types in primitive types
-        jobject valueJVM;
-        for(int i = 0;i<size; i++ ){
-            valueJVM = env->GetObjectArrayElement(dbusValues,i);
-
-            //if the value is a string, transform to primitive char*, put it in the message and free it
-            //there is no risk of use-after-free as DBus copy the string in an internal buffer.
-            if(dbusTypesNative[i] == 's'){
-                const char* valueNative = env->GetStringUTFChars((jstring)valueJVM, 0);
-                dbus_message_iter_append_basic(container, DBUS_TYPE_STRING, &valueNative);
-                env->ReleaseStringUTFChars((jstring) valueJVM, valueNative);
-            }else if(dbusTypesNative[i] == 'i'){
-                jclass intClass = env->FindClass("java/lang/Integer");
-                jint valueNative = env->CallIntMethod(valueJVM,env->GetMethodID(intClass, "intValue", "()I"));
-                dbus_message_iter_append_basic(container, DBUS_TYPE_INT32, &valueNative);
-            }else{
-                //TODO: throw something
-            }
+        const char* dbusTypesNative = env->GetStringUTFChars(dbusTypesJVM, 0);
+        
+        if(!dbus_signature_validate(dbusTypesNative,NULL)){
+            env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"The given signture is not a valid DBus signature");
+        }else if(strlen(dbusTypesNative) > 0){
+            //cut the signature in single char and transform the JVM types in primitive types
+            jobject valueJVM;
+            int i = 0;
+            DBusSignatureIter signatureIter;
+            dbus_signature_iter_init(&signatureIter,dbusTypesNative);
+            do{
+                valueJVM = env->GetObjectArrayElement(dbusValues,i++);
+                int currentSignature = dbus_signature_iter_get_current_type(&signatureIter);
+                //if the value is a string, transform to primitive char*, put it in the message and free it
+                //there is no risk of use-after-free as DBus copy the string in an internal buffer.
+                switch(currentSignature){
+                    case DBUS_TYPE_STRING:
+                    {
+                        const char* valueNative = env->GetStringUTFChars((jstring)valueJVM, 0);
+                        dbus_message_iter_append_basic(container, DBUS_TYPE_STRING, &valueNative);
+                        env->ReleaseStringUTFChars((jstring) valueJVM, valueNative);
+                        break;
+                    }
+                    case DBUS_TYPE_INT32:
+                    {
+                        jclass intClass = env->FindClass("java/lang/Integer");
+                        jint valueNative = env->CallIntMethod(valueJVM,env->GetMethodID(intClass, "intValue", "()I"));
+                        dbus_message_iter_append_basic(container, DBUS_TYPE_INT32, &valueNative);
+                        break;
+                    }
+                    case DBUS_TYPE_INVALID:
+                    {
+                        break;
+                    }
+                    default:
+                    {
+                        std::string error = "Unsupported type detected : ";
+                        error += (char)currentSignature;
+                        env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),error.c_str());
+                        break;
+                    }
+                }
+            }while(dbus_signature_iter_next(&signatureIter) && !env->ExceptionOccurred());
         }
         env->ReleaseStringUTFChars(dbusTypesJVM, dbusTypesNative);
     }
@@ -57,12 +79,12 @@ jobject unserialize(context* ctx, DBusMessageIter* container){
     if(dbus_message_iter_get_arg_type(container) != DBUS_TYPE_INVALID){
         do{
             if(dbus_message_iter_get_arg_type(container) == DBUS_TYPE_STRING){
-                signature.append(1,TYPE_STRING);
+                signature += DBUS_TYPE_STRING_AS_STRING;
                 char* value = NULL;
                 dbus_message_iter_get_basic(container, &value);
                 values.push_back(env->NewStringUTF((const char*)value));
             }else if(dbus_message_iter_get_arg_type(container) == DBUS_TYPE_INT32){
-                signature.append(1,TYPE_INT32);
+                signature += DBUS_TYPE_INT32_AS_STRING;
                 int value;
                 dbus_message_iter_get_basic(container, &value);
                 values.push_back(toInteger(env,value));

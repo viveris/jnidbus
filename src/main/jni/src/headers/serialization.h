@@ -8,13 +8,6 @@
 #ifndef _serialization_
 #define _serialization_
 
-/*
- * The two following functions are helpers built for recursive serialization/deserialization
- */
-
-#define TYPE_STRING     (char) 's'
-#define TYPE_INT32      (char) 'i'
-
 /**
  * Serialize a JVM Message object and trasfer it to the Dbus message iterator.
  * The method will throw a JVM exception if something went wrong
