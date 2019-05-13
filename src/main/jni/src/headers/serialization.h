@@ -9,7 +9,7 @@
 #define _serialization_
 
 /**
- * Serialize a JVM Message object and trasfer it to the Dbus message iterator.
+ * Serialize a JVM Message object and transfer it to the Dbus message iterator.
  * The method will throw a JVM exception if something went wrong
  */
 void serialize(context* ctx, jobject message, DBusMessageIter* container);
@@ -20,7 +20,28 @@ void serialize(context* ctx, jobject message, DBusMessageIter* container);
  */ 
 jobject unserialize(context* ctx, DBusMessageIter* container);
 
-//helper function to transform a primitive int into a boxed JVM instance
-jobject toInteger(JNIEnv* env, int value);
+
+
+/**
+ * Transfer the JVM array into the container
+ */
+void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessageIter* container, DBusSignatureIter* signature);
+
+/**
+ * Transfer the container array into a JVM array
+ */
+jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* container);
+
+
+
+/**
+ * Transfer the JVM object into the container
+ */
+void serialize_element(context* ctx, int dbus_type, jobject object, DBusMessageIter* container);
+
+/**
+ * Transfer the serialized element into a JVM object
+ */
+jobject unserialize_element(context* ctx, DBusMessageIter* container);
 
 #endif
