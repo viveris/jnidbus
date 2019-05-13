@@ -28,9 +28,9 @@ jobject unserialize(context* ctx, DBusMessageIter* container);
 void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessageIter* container, DBusSignatureIter* signature);
 
 /**
- * Transfer the container array into a JVM array
+ * Transfer the container array into a JVM array and append the array signature to the given string
  */
-jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* container);
+jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* container, std::string* signature);
 
 
 

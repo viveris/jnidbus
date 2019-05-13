@@ -1,15 +1,15 @@
 package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
-import fr.viveris.vizada.jnidbus.message.Message;
+import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
 public abstract class AbstractSendingRequest {
-    private Message message;
+    private DBusObject message;
 
-    public AbstractSendingRequest(Message message) {
+    public AbstractSendingRequest(DBusObject message) {
         this.message = message;
     }
 
-    public Message getMessage() {
+    public DBusObject getMessage() {
         return message;
     }
 }

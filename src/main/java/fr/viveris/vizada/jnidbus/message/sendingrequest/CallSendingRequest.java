@@ -2,6 +2,7 @@ package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
+import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
 public class CallSendingRequest extends AbstractSendingRequest {
     private String path;
@@ -10,7 +11,7 @@ public class CallSendingRequest extends AbstractSendingRequest {
     private String dest;
     private PendingCall pendingCall;
 
-    public CallSendingRequest(Message message, String path, String interfaceName, String member, String dest, PendingCall pendingCall) {
+    public CallSendingRequest(DBusObject message, String path, String interfaceName, String member, String dest, PendingCall pendingCall) {
         super(message);
         this.path = path;
         this.interfaceName = interfaceName;

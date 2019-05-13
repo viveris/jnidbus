@@ -19,8 +19,6 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
   DBusMessageIter rootIter;
   dbus_message_iter_init(msg, &rootIter);
   jobject jvmObject = unserialize(ctx,&rootIter);
-  
-  //TODO: check null return
 
   //message metadata
   const char * interface = dbus_message_get_interface(msg);

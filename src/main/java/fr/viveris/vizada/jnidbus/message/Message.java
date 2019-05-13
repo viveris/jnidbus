@@ -45,6 +45,8 @@ public abstract class Message implements Serializable {
                         throw new IllegalArgumentException("The value returned by " + getterName + " is not a List");
                     }
 
+                }else if(element.isObject()){
+                    values[i] = ((Serializable)getter.invoke(this)).serialize();
                 }else{
                     throw new IllegalStateException("Unknown type detected: "+element.toString());
                 }
@@ -73,19 +75,8 @@ public abstract class Message implements Serializable {
             try{
                 Method setter = null;
                 if(element.isPrimitive()){
-                    Class<?> setterType;
-                    switch (element.getPrimitive()){
-                        case STRING:
-                            setterType = String.class;
-                            break;
-                        case INTEGER:
-                            setterType = Integer.class;
-                            break;
-                        default:
-                            throw new IllegalStateException("Unknown primitive type"+element);
-                    }
-                    setter = clazz.getDeclaredMethod(getterName,setterType);
-                    setter.invoke(this,(String) values[i]);
+                    setter = clazz.getDeclaredMethod(getterName,clazz.getDeclaredField(type.fields()[i]).getType());
+                    setter.invoke(this,values[i]);
                 }else if(element.isArray()){
                     try{
                         setter = clazz.getDeclaredMethod(getterName,List.class);
@@ -93,6 +84,13 @@ public abstract class Message implements Serializable {
                     }catch (NoSuchMethodException e){
                         throw new IllegalStateException("Unknown list getter "+getterName);
                     }
+                }else if(element.isObject()){
+                    Class<?> objClazz = clazz.getDeclaredField(type.fields()[i]).getType();
+                    if(!Serializable.class.isAssignableFrom(objClazz)) throw new IllegalStateException("The setter "+setter.getName()+" takes a non-serializable type as parameter");
+                    Serializable unserialized = objClazz.asSubclass(Serializable.class).newInstance();
+                    unserialized.unserialize((DBusObject)values[i]);
+                    clazz.getDeclaredMethod(getterName,objClazz).invoke(this,unserialized);
+
                 }else{
                     throw new IllegalStateException("Unknown type detected: "+element);
                 }
@@ -135,7 +133,9 @@ public abstract class Message implements Serializable {
                     }else{
                         if(!(o instanceof DBusObject)) throw new IllegalStateException("The values are not unserializable objects");
                         Serializable obj = ((Class<? extends Serializable>)genericType).newInstance();
-                        obj.unserialize((DBusObject)o);
+                        //generate DBusObject from raw data and signature element object
+                        DBusObject toUnserialize = new DBusObject(signature.getSignature().getSignature(),(Object[])o);
+                        obj.unserialize(toUnserialize);
                         list.add(obj);
                     }
                 }

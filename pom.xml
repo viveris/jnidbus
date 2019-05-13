@@ -46,6 +46,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
                 <configuration>
+                    <!-- Add JNI shared library path and enable JNI checks for testing -->
                     <argLine>-Djava.library.path=${basedir}/src/main/resources -Xcheck:jni</argLine>
                 </configuration>
             </plugin>
@@ -54,7 +55,8 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <groupId>org.codehaus.mojo</groupId>
                 <executions>
-                    <execution><!-- Run our version calculation script -->
+                    <execution>
+                        <!-- Run our JNI compilation script (generate headers from code, copy them, compile C++ code and copy output shared library -->
                         <id>Generate JNI headers</id>
                         <phase>compile</phase>
                         <goals>

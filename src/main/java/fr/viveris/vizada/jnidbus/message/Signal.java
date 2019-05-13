@@ -1,5 +1,7 @@
 package fr.viveris.vizada.jnidbus.message;
 
+import fr.viveris.vizada.jnidbus.serialization.DBusObject;
+
 public abstract class Signal<In extends Message> {
     private DbusSignal annotation;
     private In params;
@@ -22,7 +24,7 @@ public abstract class Signal<In extends Message> {
         return this.annotation.member();
     }
 
-    public In getParams() {
-        return params;
+    public DBusObject getParams() {
+        return params.serialize();
     }
 }

@@ -67,7 +67,7 @@ public class Dispatcher {
                     }
                     Message returnObject = (Message) handler.call(param);
                     if(returnObject != null){
-                        this.eventLoop.send(new ReplySendingRequest(returnObject,msgPointer));
+                        this.eventLoop.send(new ReplySendingRequest(returnObject.serialize(),msgPointer));
                     }
                 }catch (Exception e){
                     if(msgPointer != 0){

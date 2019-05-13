@@ -1,5 +1,8 @@
 package fr.viveris.vizada.jnidbus.serialization;
 
+/**
+ * Primitive representation of a serialized object. Be carefull when modyfing this object, it is usde a multiple places in the JNI code
+ */
 public class DBusObject {
 
     private String signature;

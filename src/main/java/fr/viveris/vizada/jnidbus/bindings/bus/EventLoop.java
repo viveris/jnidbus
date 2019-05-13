@@ -6,6 +6,7 @@ import fr.viveris.vizada.jnidbus.message.sendingrequest.*;
 import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
+import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -69,10 +70,10 @@ public class EventLoop implements Closeable {
      */
     public native void wakeup(long contextPtr);
 
-    private native void sendReply(long contextPtr, Message msg, long msgPointer);
+    private native void sendReply(long contextPtr, DBusObject msg, long msgPointer);
     private native void sendReplyError(long contextPtr, long msgPointer, String errorName, String errorMessage);
-    private native void sendSignal(long contextPtr, String path, String interfaceName, String member, Message msg);
-    private native void sendCall(long contextPtr, String path, String interfaceName, String member, Message msg, String dest, PendingCall pendingCall);
+    private native void sendSignal(long contextPtr, String path, String interfaceName, String member, DBusObject msg);
+    private native void sendCall(long contextPtr, String path, String interfaceName, String member, DBusObject msg, String dest, PendingCall pendingCall);
 
     private native void addPathHandler(long contextPtr, String path, Dispatcher handler);
 

@@ -1,5 +1,7 @@
 package fr.viveris.vizada.jnidbus.message;
 
+import fr.viveris.vizada.jnidbus.serialization.DBusObject;
+
 public abstract class Call<In extends Message,Out extends Message> {
     private DbusMethodCall annotation;
     private Class<Out> returnType;
@@ -32,7 +34,7 @@ public abstract class Call<In extends Message,Out extends Message> {
         return returnType;
     }
 
-    public In getParams() {
-        return params;
+    public DBusObject getParams() {
+        return params.serialize();
     }
 }

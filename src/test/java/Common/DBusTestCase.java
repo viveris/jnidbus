@@ -17,12 +17,11 @@ public abstract class DBusTestCase {
     protected String receiverBusName;
 
     /**
-     * We have to setup a new connection for each bus in for more safety, in addition we must make the bus name
+     * We have to setup a new connection for each test for nice stateless tests, in addition we must make the bus name
      * unique as DBus needs a few millis to free a bus name, meaning each test would be delayed, which is not acceptable
      */
     @Before
     public void setup() throws ConnectionException {
-        SecureRandom random = new SecureRandom();
         this.senderBusName = "fr.viveris.vizada.jnidbus.test.sender."+generateRandomString();
         this.receiverBusName = "fr.viveris.vizada.jnidbus.test.sender."+generateRandomString();
         this.sender = new Dbus(BusType.SESSION,this.senderBusName);
@@ -38,7 +37,8 @@ public abstract class DBusTestCase {
     }
 
     /**
-     * Don't ask me
+     * Generate a random string containing any letter between "a" and "z"
+     * size fixed to 10 chars
      * @return
      */
     private static String generateRandomString(){

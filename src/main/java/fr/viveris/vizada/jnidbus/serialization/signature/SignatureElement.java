@@ -31,6 +31,10 @@ public class SignatureElement {
         return new Signature(this.signature);
     }
 
+    public String getSignatureString(){
+        return this.signature;
+    }
+
     public SupportedTypes getContainerType() { return containerType; }
 
     @Override

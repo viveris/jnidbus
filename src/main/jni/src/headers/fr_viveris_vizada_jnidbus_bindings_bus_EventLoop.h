@@ -34,7 +34,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_wak
 /*
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    sendReply
- * Signature: (JLfr/viveris/vizada/jnidbus/message/Message;J)V
+ * Signature: (JLfr/viveris/vizada/jnidbus/serialization/DBusObject;J)V
  */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendReply
   (JNIEnv *, jobject, jlong, jobject, jlong);
@@ -50,7 +50,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
 /*
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    sendSignal
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/message/Message;)V
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/serialization/DBusObject;)V
  */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendSignal
   (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jobject);
@@ -58,7 +58,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
 /*
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    sendCall
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/message/Message;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/message/PendingCall;)V
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/serialization/DBusObject;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/message/PendingCall;)V
  */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendCall
   (JNIEnv *, jobject, jlong, jstring, jstring, jstring, jobject, jstring, jobject);
