@@ -20,10 +20,10 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
 /*
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    tick
- * Signature: (J)V
+ * Signature: (JI)V
  */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tick
-  (JNIEnv *, jobject, jlong);
+  (JNIEnv *, jobject, jlong, jint);
 
 /*
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop

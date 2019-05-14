@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class EventLoop implements Closeable {
     public static final int SENDING_QUEUE_SIZE = 100;
@@ -19,6 +20,8 @@ public class EventLoop implements Closeable {
     private long dBusContextPointer;
 
     private AtomicBoolean isClosed = new AtomicBoolean(true);
+
+    private AtomicInteger inQueue = new AtomicInteger(0);
 
     /**
      * Thread running the event loop
@@ -63,7 +66,7 @@ public class EventLoop implements Closeable {
     /**
      * Will call epoll, wait for events and dispatch those events to dbus. we can interupt an ongoing tick by calling the wakeup() function.
      */
-    private native void tick(long contextPtr);
+    private native void tick(long contextPtr, int timeout);
 
     /**
      * Will send a byte on the wakeup pipe, which will make epoll_wait return, making the ongoing tick stop
@@ -87,6 +90,7 @@ public class EventLoop implements Closeable {
             while(!this.handlerAddingQueue.isEmpty()){
                 Dispatcher d = this.handlerAddingQueue.poll();
                 this.addPathHandler(this.dBusContextPointer,d.getPath(),d);
+                this.inQueue.decrementAndGet();
             }
 
             //limit the number of send per tick to 100 (to avoid reading starvation)
@@ -115,25 +119,42 @@ public class EventLoop implements Closeable {
                     this.sendSignal(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage());
                 }
                 i++;
+                this.inQueue.decrementAndGet();
             }
 
             //launch tick
-            this.tick(this.dBusContextPointer);
+            if(this.inQueue.get() > 0){
+                this.tick(this.dBusContextPointer,0);
+            }else{
+                this.tick(this.dBusContextPointer,-1);
+            }
         }
 
         this.connection.close();
     }
 
     public void addPathHandler(Dispatcher dispatcher){
-        try { this.startBarrier.await(); } catch (InterruptedException e) { }
-        this.handlerAddingQueue.add(dispatcher);
-        this.wakeup(this.dBusContextPointer);
+        this.inQueue.incrementAndGet();
+        if(this.checkEventLoop()){
+            this.handlerAddingQueue.add(dispatcher);
+            this.wakeup(this.dBusContextPointer);
+        }
     }
 
 
     public void send(AbstractSendingRequest request){
-        this.signalSendingQueue.add(request);
-        this.wakeup(this.dBusContextPointer);
+        this.inQueue.incrementAndGet();
+        if(this.checkEventLoop()){
+            this.signalSendingQueue.add(request);
+            this.wakeup(this.dBusContextPointer);
+        }
+    }
+
+    private boolean checkEventLoop(){
+        if(this.isClosed.get()){
+            try { this.startBarrier.await(); } catch (InterruptedException e) { }
+        }
+        return !this.isClosed.get();
     }
 
     @Override

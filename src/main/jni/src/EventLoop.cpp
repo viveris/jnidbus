@@ -78,13 +78,13 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tick
-  (JNIEnv * env, jobject target,jlong ctxPtr){
+  (JNIEnv * env, jobject target,jlong ctxPtr, jint timeout){
     //get context
     context* ctx = (context*) ctxPtr;
     epoll_event* events = ctx->epollStruct;
 
     //wait for event
-    int numberSelected = epoll_wait(ctx->epollFD,events,EPOLL_MAX_EVENTS,100);
+    int numberSelected = epoll_wait(ctx->epollFD,events,EPOLL_MAX_EVENTS,(int)timeout);
 
     //iterate through what epoll selected
     for (int i = 0; i < numberSelected; i++){
