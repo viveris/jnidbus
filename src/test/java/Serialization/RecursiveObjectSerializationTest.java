@@ -1,6 +1,7 @@
 package Serialization;
 
 import Common.DBusTestCase;
+import Serialization.DBusObjects.ArrayRecursiveObject;
 import Serialization.DBusObjects.RecursiveObject;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
@@ -45,6 +46,34 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
         assertEquals("test2",received.getObject().getString());
     }
 
+    @Test
+    public void recursiveNestedObject() throws InterruptedException {
+        SignalHandler handler = new SignalHandler();
+        this.receiver.addMessageHandler(handler);
+        ArrayRecursiveObject typeObject = new ArrayRecursiveObject();
+
+        //test Java serialization
+        ArrayRecursiveObject.SubArrayRecursiveObject subObject = new ArrayRecursiveObject.SubArrayRecursiveObject();
+        subObject.setInteger(42);
+        subObject.getStrings().add("test");
+        typeObject.getObjects().add(subObject);
+        DBusObject obj = typeObject.serialize();
+        DBusObject subObj = (DBusObject)((Object[])obj.getValues()[0])[0];
+
+        assertEquals("a(asi)",obj.getSignature());
+        assertEquals(42,subObj.getValues()[1]);
+        assertEquals("test",((Object[])subObj.getValues()[0])[0]);
+        assertEquals("asi",subObj.getSignature());
+
+        //send signal, which test JNI and Java unserialization
+        this.sender.sendSignal(new ArrayRecursiveObjectSignal(typeObject));
+        assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
+        ArrayRecursiveObject received = handler.arrayRecursiveObject;
+        assertEquals(1,received.getObjects().size());
+        assertEquals(42,received.getObjects().get(0).getInteger());
+        assertEquals("test",received.getObjects().get(0).getStrings().get(0));
+    }
+
     @Handler(
             path = "/Serialization/RecursiveObjectSerializationTest",
             interfaceName = "Serialization.RecursiveObjectSerializationTest"
@@ -52,6 +81,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
     public class SignalHandler extends GenericHandler {
         private CountDownLatch barrier = new CountDownLatch(1);
         private RecursiveObject recursiveObject;
+        private ArrayRecursiveObject arrayRecursiveObject;
 
         @HandlerMethod(
                 member = "recursiveObject",
@@ -59,6 +89,15 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
         )
         public void recursiveObject(RecursiveObject signal){
             this.recursiveObject = signal;
+            this.barrier.countDown();
+        }
+
+        @HandlerMethod(
+                member = "arrayRecursiveObject",
+                type = Criteria.HandlerType.SIGNAL
+        )
+        public void arrayRecursiveObject(ArrayRecursiveObject signal){
+            this.arrayRecursiveObject = signal;
             this.barrier.countDown();
         }
     }
@@ -70,6 +109,17 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
     )
     public static class RecursiveObjectSignal extends Signal<RecursiveObject> {
         public RecursiveObjectSignal(RecursiveObject msg) {
+            super(msg);
+        }
+    }
+
+    @DbusSignal(
+            path = "/Serialization/RecursiveObjectSerializationTest",
+            interfaceName = "Serialization.RecursiveObjectSerializationTest",
+            member = "arrayRecursiveObject"
+    )
+    public static class ArrayRecursiveObjectSignal extends Signal<ArrayRecursiveObject> {
+        public ArrayRecursiveObjectSignal(ArrayRecursiveObject msg) {
             super(msg);
         }
     }

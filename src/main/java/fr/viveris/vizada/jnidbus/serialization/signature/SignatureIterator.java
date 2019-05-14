@@ -31,7 +31,7 @@ public class SignatureIterator  implements Iterator<SignatureElement> {
             //the signature of recursive arrays
             char firstSignatureElement = this.signature.charAt(this.position);
             if(firstSignatureElement == SupportedTypes.OBJECT_BEGIN.getValue() || firstSignatureElement == SupportedTypes.ARRAY.getValue()){
-                return new SignatureElement(this.generateArraySignature(),null,SupportedTypes.forChar(firstSignatureElement));
+                return new SignatureElement(this.generateArraySignature(),null,SupportedTypes.ARRAY);
             }else{
                 //go to the next element and return the primitive array signature element
                 this.position++;

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @DBusType(
-        value = "aai",
+        signature = "aai",
         fields = "array"
 )
 public class CollectionOfCollectionArray extends Message {

@@ -4,7 +4,7 @@ import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusType;
 
 @DBusType(
-        value = "i(s)s",
+        signature = "i(s)s",
         fields = {"integer","object","string"}
 )
 public class RecursiveObject extends Message {
@@ -38,7 +38,7 @@ public class RecursiveObject extends Message {
     }
 
     @DBusType(
-            value = "s",
+            signature = "s",
             fields = {"string"}
     )
     public static class SubObject extends Message{

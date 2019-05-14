@@ -5,6 +5,6 @@ import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DBusType {
-    String value();
+    String signature();
     String[] fields();
 }

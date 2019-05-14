@@ -4,7 +4,7 @@ import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusType;
 
 @DBusType(
-        value = "s",
+        signature = "s",
         fields = "string"
 )
 public class StringMessage extends Message {

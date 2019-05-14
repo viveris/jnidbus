@@ -31,10 +31,10 @@ public abstract class GenericHandler {
             if(annotation.type() == Criteria.HandlerType.METHOD && (returnAnnotation == null || !Serializable.class.isAssignableFrom(returnType))){
                 throw new IllegalArgumentException("A handler method return type must have the DBusType annotation and be Serializable");
             }else if(returnAnnotation != null){
-                ouputSignature = returnAnnotation.value();
+                ouputSignature = returnAnnotation.signature();
             }
 
-            returned.put(new Criteria(annotation.member(),paramAnnotation.value(),ouputSignature,annotation.type()),new HandlerMethod(this,m));
+            returned.put(new Criteria(annotation.member(),paramAnnotation.signature(),ouputSignature,annotation.type()),new HandlerMethod(this,m));
 
         }
         return returned;

@@ -4,7 +4,6 @@ import fr.viveris.vizada.jnidbus.exception.MessageSignatureMismatch;
 import fr.viveris.vizada.jnidbus.serialization.*;
 import fr.viveris.vizada.jnidbus.serialization.signature.Signature;
 import fr.viveris.vizada.jnidbus.serialization.signature.SignatureElement;
-import fr.viveris.vizada.jnidbus.serialization.signature.SupportedTypes;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -25,7 +24,7 @@ public abstract class Message implements Serializable {
         //set the array length at the number of field and iterate on every char of the signature
         Object[] values = new Object[type.fields().length];
         int i = 0;
-        for(SignatureElement element : new Signature(type.value())){
+        for(SignatureElement element : new Signature(type.signature())){
             //generate getter name
             String getterName = "get" + Character.toUpperCase(type.fields()[i].charAt(0)) + type.fields()[i].substring(1);
 
@@ -40,9 +39,9 @@ public abstract class Message implements Serializable {
 
                     if(value instanceof List){
                         List collection = (List)value;
-                        values[i] = Message.serializeList(collection,element,getter.getGenericReturnType());
+                        values[i] = Message.serializeList(collection,element,((ParameterizedType)getter.getGenericReturnType()).getActualTypeArguments()[0]);
                     }else {
-                        throw new IllegalArgumentException("The value returned by " + getterName + " is not a List");
+                        throw new IllegalArgumentException("The signature returned by " + getterName + " is not a List");
                     }
 
                 }else if(element.isObject()){
@@ -56,7 +55,7 @@ public abstract class Message implements Serializable {
             i++;
         }
 
-        return new DBusObject(type.value(),values);
+        return new DBusObject(type.signature(),values);
     }
 
     @Override
@@ -65,11 +64,11 @@ public abstract class Message implements Serializable {
         Class<? extends Message> clazz = this.getClass();
 
         if(type == null) throw new IllegalStateException("No DBusType annotation found");
-        if(!type.value().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+type.value()+" but got "+obj.getSignature());
+        if(!type.signature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+type.signature()+" but got "+obj.getSignature());
 
         Object[] values = obj.getValues();
         int i = 0;
-        for(SignatureElement element : new Signature(type.value())){
+        for(SignatureElement element : new Signature(type.signature())){
             String getterName = "set" + Character.toUpperCase(type.fields()[i].charAt(0)) + type.fields()[i].substring(1);
 
             try{
@@ -80,7 +79,7 @@ public abstract class Message implements Serializable {
                 }else if(element.isArray()){
                     try{
                         setter = clazz.getDeclaredMethod(getterName,List.class);
-                        setter.invoke(this,Message.unserializeList((Object[])values[i],element,setter.getGenericParameterTypes()[0]));
+                        setter.invoke(this,Message.unserializeList((Object[])values[i],element,((ParameterizedType)setter.getGenericParameterTypes()[0]).getActualTypeArguments()[0]));
                     }catch (NoSuchMethodException e){
                         throw new IllegalStateException("Unknown list getter "+getterName);
                     }
@@ -134,8 +133,7 @@ public abstract class Message implements Serializable {
                         if(!(o instanceof DBusObject)) throw new IllegalStateException("The values are not unserializable objects");
                         Serializable obj = ((Class<? extends Serializable>)genericType).newInstance();
                         //generate DBusObject from raw data and signature element object
-                        DBusObject toUnserialize = new DBusObject(signature.getSignature().getSignature(),(Object[])o);
-                        obj.unserialize(toUnserialize);
+                        obj.unserialize((DBusObject)o);
                         list.add(obj);
                     }
                 }
@@ -145,42 +143,10 @@ public abstract class Message implements Serializable {
     }
 
     @DBusType(
-            value = "",
+            signature = "",
             fields = ""
     )
     public static class EmptyMessage extends Message{
         private EmptyMessage(){}
     }
-
-    /**
-     * GENERICS SNIPPET
-     *
-     *
-     * public class Test {
-     *
-     *     public List<List<String>> test() {
-     *         return null;
-     *     }
-     *
-     *     public static void main(String[] args) throws Exception {
-     *
-     *         for (Method method : Test.class.getMethods()) {
-     *             Class returnClass = method.getReturnType();
-     *             if (Collection.class.isAssignableFrom(returnClass)) {
-     *                 Type returnType = method.getGenericReturnType();
-     *                 if (returnType instanceof ParameterizedType) {
-     *                     ParameterizedType paramType = (ParameterizedType) returnType;
-     *                     Type[] argTypes = paramType.getActualTypeArguments();
-     *                     if (argTypes.length > 0) {
-     *                         System.out.println("Generic type is " + argTypes[0]);
-     *                         System.out.println("Generic generic "+((Type[])((ParameterizedType)argTypes[0]).getActualTypeArguments())[0]);
-     *                     }
-     *                 }
-     *             }
-     *         }
-     *
-     *     }
-     *
-     * }
-     */
 }

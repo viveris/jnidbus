@@ -17,8 +17,11 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
   get_env(ctx,&env);
   
   DBusMessageIter rootIter;
+  DBusSignatureIter signatureIter;
+  const char* rawSignature = dbus_message_get_signature(msg);
   dbus_message_iter_init(msg, &rootIter);
-  jobject jvmObject = unserialize(ctx,&rootIter);
+  dbus_signature_iter_init(&signatureIter,rawSignature);
+  jobject jvmObject = unserialize(ctx,&rootIter,&signatureIter);
 
   //message metadata
   const char * interface = dbus_message_get_interface(msg);
@@ -109,8 +112,11 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
   //else, unserialize and call the notify() method  
   }else{
     DBusMessageIter rootIter;
+    DBusSignatureIter signatureIter;
+    const char* rawSignature = dbus_message_get_signature(msg);
     dbus_message_iter_init(msg, &rootIter);
-    jobject jvmObject = unserialize(ctx,&rootIter);
+    dbus_signature_iter_init(&signatureIter,rawSignature);
+    jobject jvmObject = unserialize(ctx,&rootIter,&signatureIter);
 
     env->CallVoidMethod(
       pCtx->pending_call,

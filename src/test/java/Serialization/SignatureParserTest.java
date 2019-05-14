@@ -57,7 +57,7 @@ public class SignatureParserTest {
         for(SignatureElement sub : subSignature){
             if(sub.isPrimitive()) assertTrue(sub.getPrimitive() == values[i++]);
             else{
-                assertTrue(element.getContainerType() == values[i++] );
+                assertTrue(sub.getContainerType() == values[i++] );
                 assertTrue(checkElement(sub,(Object[]) values[i++]));
             }
         }
