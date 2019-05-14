@@ -84,7 +84,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tic
     epoll_event* events = ctx->epollStruct;
 
     //wait for event
-    int numberSelected = epoll_wait(ctx->epollFD,events,EPOLL_MAX_EVENTS,-1);
+    int numberSelected = epoll_wait(ctx->epollFD,events,EPOLL_MAX_EVENTS,100);
 
     //iterate through what epoll selected
     for (int i = 0; i < numberSelected; i++){

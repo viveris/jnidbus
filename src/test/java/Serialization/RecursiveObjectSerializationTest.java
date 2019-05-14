@@ -53,25 +53,35 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
         ArrayRecursiveObject typeObject = new ArrayRecursiveObject();
 
         //test Java serialization
-        ArrayRecursiveObject.SubArrayRecursiveObject subObject = new ArrayRecursiveObject.SubArrayRecursiveObject();
-        subObject.setInteger(42);
-        subObject.getStrings().add("test");
-        typeObject.getObjects().add(subObject);
+        ArrayRecursiveObject.SubArrayRecursiveObject subObject1 = new ArrayRecursiveObject.SubArrayRecursiveObject();
+        ArrayRecursiveObject.SubArrayRecursiveObject subObject2 = new ArrayRecursiveObject.SubArrayRecursiveObject();
+        subObject1.setInteger(42);
+        subObject2.setInteger(24);
+        subObject1.getStrings().add("test1");
+        subObject2.getStrings().add("test2");
+        typeObject.getObjects().add(subObject1);
+        typeObject.getObjects().add(subObject2);
         DBusObject obj = typeObject.serialize();
-        DBusObject subObj = (DBusObject)((Object[])obj.getValues()[0])[0];
+        DBusObject subObj1 = (DBusObject)((Object[])obj.getValues()[0])[0];
+        DBusObject subObj2 = (DBusObject)((Object[])obj.getValues()[0])[1];
 
         assertEquals("a(asi)",obj.getSignature());
-        assertEquals(42,subObj.getValues()[1]);
-        assertEquals("test",((Object[])subObj.getValues()[0])[0]);
-        assertEquals("asi",subObj.getSignature());
+        assertEquals(42,subObj1.getValues()[1]);
+        assertEquals(24,subObj2.getValues()[1]);
+        assertEquals("test1",((Object[])subObj1.getValues()[0])[0]);
+        assertEquals("test2",((Object[])subObj2.getValues()[0])[0]);
+        assertEquals("asi",subObj1.getSignature());
+        assertEquals("asi",subObj2.getSignature());
 
         //send signal, which test JNI and Java unserialization
         this.sender.sendSignal(new ArrayRecursiveObjectSignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         ArrayRecursiveObject received = handler.arrayRecursiveObject;
-        assertEquals(1,received.getObjects().size());
+        assertEquals(2,received.getObjects().size());
         assertEquals(42,received.getObjects().get(0).getInteger());
-        assertEquals("test",received.getObjects().get(0).getStrings().get(0));
+        assertEquals(24,received.getObjects().get(1).getInteger());
+        assertEquals("test1",received.getObjects().get(0).getStrings().get(0));
+        assertEquals("test2",received.getObjects().get(1).getStrings().get(0));
     }
 
     @Handler(

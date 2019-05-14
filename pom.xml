@@ -11,7 +11,7 @@
     <properties>
         <java.version>1.7</java.version>
         <junit.version>4.12</junit.version>
-        <!-- <mockito.version>1.10.19</mockito.version> -->
+        <jmh.version>1.21</jmh.version>
     </properties>
 
     <dependencies>
@@ -21,12 +21,19 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${mockito.version}</version>
-            <scope>test</scope>
-        </dependency> -->
+
+        <!-- JMH dependencies -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>${jmh.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -67,8 +74,29 @@
                             <executable>${basedir}/src/scripts/compileJNI.sh</executable>
                         </configuration>
                     </execution>
+
+                    <!-- JMH task -->
+                    <execution>
+                        <id>run-benchmarks</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <classpathScope>test</classpathScope>
+                            <executable>${java.home}/bin/java</executable>
+                            <arguments>
+                                <argument>-Djava.library.path=${basedir}/src/main/resources</argument>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>org.openjdk.jmh.Main</argument>
+                                <argument>.*</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 

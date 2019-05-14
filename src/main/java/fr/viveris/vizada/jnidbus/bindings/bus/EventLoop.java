@@ -4,7 +4,6 @@ import fr.viveris.vizada.jnidbus.exception.DBusException;
 import fr.viveris.vizada.jnidbus.exception.EventLoopSetupException;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.*;
 import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
-import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
@@ -15,6 +14,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EventLoop implements Closeable {
+    public static final int SENDING_QUEUE_SIZE = 100;
 
     private long dBusContextPointer;
 
@@ -30,7 +30,7 @@ public class EventLoop implements Closeable {
      */
     private LinkedBlockingDeque<Dispatcher> handlerAddingQueue = new LinkedBlockingDeque<>();
 
-    private LinkedBlockingDeque<AbstractSendingRequest> signalSendingQueue = new LinkedBlockingDeque<>(100);
+    private LinkedBlockingDeque<AbstractSendingRequest> signalSendingQueue = new LinkedBlockingDeque<>(SENDING_QUEUE_SIZE);
 
     private Connection connection;
 
@@ -91,7 +91,7 @@ public class EventLoop implements Closeable {
 
             //limit the number of send per tick to 100 (to avoid reading starvation)
             int i = 0;
-            while(!this.signalSendingQueue.isEmpty() && i<100){
+            while(!this.signalSendingQueue.isEmpty() && i<SENDING_QUEUE_SIZE){
                 AbstractSendingRequest abstarctRequest = this.signalSendingQueue.poll();
                 if(abstarctRequest instanceof CallSendingRequest){
                     CallSendingRequest req = (CallSendingRequest)abstarctRequest;

@@ -41,7 +41,7 @@ public abstract class DBusTestCase {
      * size fixed to 10 chars
      * @return
      */
-    private static String generateRandomString(){
+    public static String generateRandomString(){
         int leftLimit = 97; // letter 'a'
         int rightLimit = 122; // letter 'z'
         int targetStringLength = 10;

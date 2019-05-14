@@ -75,6 +75,7 @@ jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter*
     std::string signature = std::string();
     jclass dbusObjectClass = find_class(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject");
 
+
     do{
         switch(dbus_signature_iter_get_current_type(signatureIter)){
             case DBUS_TYPE_ARRAY:
@@ -163,25 +164,15 @@ void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessag
         dbus_message_iter_close_container(container,&sub_container);
         
     }else if(dbus_type == DBUS_TYPE_STRUCT){
-        DBusSignatureIter sub_signature;
-        dbus_signature_iter_recurse(signature,&sub_signature);
-
-        DBusMessageIter sub_container;
-        dbus_message_iter_open_container(container,DBUS_TYPE_STRUCT,NULL,&sub_container);
-
-        //empty or null array, open the container anyway to have to correct signature
-        if(array == NULL || array_length == 0){
-            serialize_array(ctx,dbus_signature_iter_get_current_type(&sub_signature),NULL, &sub_container,&sub_signature);
-        }else{
-            int i = 0;
-            jobject valueJVM;
-            while(i < array_length){
-                valueJVM = env->GetObjectArrayElement(array,i++);
-                serialize(ctx,valueJVM,&sub_container);
-            }
+        int i = 0;
+        jobject valueJVM;
+        while(i < array_length){
+            DBusMessageIter sub_container;
+            dbus_message_iter_open_container(container,DBUS_TYPE_STRUCT,NULL,&sub_container);
+            valueJVM = env->GetObjectArrayElement(array,i++);
+            serialize(ctx,valueJVM,&sub_container);
+            dbus_message_iter_close_container(container,&sub_container);
         }
-
-        dbus_message_iter_close_container(container,&sub_container);
     }else{
         if(array_length > 0){
             int i = 0;
@@ -203,26 +194,31 @@ jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* con
     if(signature != NULL) signature->append(DBUS_TYPE_ARRAY_AS_STRING);
 
     if(dbus_type == DBUS_TYPE_ARRAY){
-        //recurse in the signature (once)
+        //recurse in the signature
         DBusSignatureIter sub_signature;
         dbus_signature_iter_recurse(signatureIter,&sub_signature);
         //flag used to avoid adding the same signature twice
-    bool signature_added = false;
+        bool signature_added = false;
         do {
+            //as there is no way to reset a DBus iterator, we memcopy the original, untouched iterator in the one
+            //we will pass to the unserialize function that will increment it
+            DBusSignatureIter sub_signature_copy;
+            memcpy(&sub_signature_copy,&sub_signature,sizeof(DBusSignatureIter));
+
             //recurse in the container, if the container is empty and that the signature was not already added, do a
             //fake serialization to correctly add the signature
             DBusMessageIter sub_container;
             dbus_message_iter_recurse(container, &sub_container);
             if(dbus_message_iter_get_arg_type(&sub_container) != DBUS_TYPE_INVALID){
                 if(!signature_added){
-                    values.push_back((jobject)unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,signature,&sub_signature));
+                    values.push_back((jobject)unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,signature,&sub_signature_copy));
                     signature_added = true;
                 }else{
-                    values.push_back((jobject)unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,NULL,&sub_signature));
+                    values.push_back((jobject)unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,NULL,&sub_signature_copy));
                 }
             }else if(!signature_added){
                 //when there is no data in the iterator, unserialize anyway to populate the signature
-                unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,signature,&sub_signature);
+                unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,signature,&sub_signature_copy);
             }
         }while (dbus_message_iter_next(container));
     }else if(dbus_type == DBUS_TYPE_STRUCT){
@@ -232,16 +228,18 @@ jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* con
         //store an unserialized struct to get its signature
         jobject signature_object;
         do {
+            //as there is no way to reset a DBus iterator, we memcopy the original, untouched iterator in the one
+            //we will pass to the unserialize function that will increment it
+            DBusSignatureIter sub_signature_copy;
+            memcpy(&sub_signature_copy,&sub_signature,sizeof(DBusSignatureIter));
+
             //recurse in the container, if the container is empty and that the signature was not already added, do a
             //fake serialization to correctly add the signature
             DBusMessageIter sub_container;
             dbus_message_iter_recurse(container, &sub_container);
             if(dbus_message_iter_get_arg_type(&sub_container) != DBUS_TYPE_INVALID){
-                signature_object = unserialize(ctx,&sub_container,&sub_signature);
+                signature_object = unserialize(ctx,&sub_container,&sub_signature_copy);
                 values.push_back(signature_object);
-            }else if(!signature_object){
-                //when there is no data in the iterator, unserialize anyway to populate the signature
-                signature_object = unserialize_array(ctx,dbus_signature_iter_get_element_type(signatureIter),&sub_container,signature,&sub_signature);
             }
         }while (dbus_message_iter_next(container));
         //add the struct signature
