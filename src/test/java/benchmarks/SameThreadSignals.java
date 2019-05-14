@@ -1,6 +1,7 @@
 package benchmarks;
 
 import Common.DBusObjects.ArrayRecursiveObject;
+import Common.DBusObjects.SimpleMessage;
 import Common.DBusTestCase;
 import fr.viveris.vizada.jnidbus.BusType;
 import fr.viveris.vizada.jnidbus.Dbus;
@@ -51,6 +52,21 @@ public class SameThreadSignals {
 
     @Benchmark
     @OperationsPerInvocation(EventLoop.SENDING_QUEUE_SIZE)
+    public void singleThreadSendReceiveSimple() throws InterruptedException {
+        this.handler.latch = new CountDownLatch(EventLoop.SENDING_QUEUE_SIZE);
+        SimpleMessage msg = new SimpleMessage();
+        msg.setInt1(45000);
+        msg.setInt2(684000);
+        msg.setString1("string 1 whouhou");
+        msg.setString2("string 2 qsdgsdgh");
+        for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
+            this.sender.sendSignal(new SimpleSignal(msg));
+        }
+        this.handler.latch.await();
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(EventLoop.SENDING_QUEUE_SIZE)
     public void singleThreadSendReceiveComplex() throws InterruptedException {
         this.handler.latch = new CountDownLatch(EventLoop.SENDING_QUEUE_SIZE);
 
@@ -95,6 +111,14 @@ public class SameThreadSignals {
         public void complexMessage(ArrayRecursiveObject complexMessage){
             this.latch.countDown();
         }
+
+        @HandlerMethod(
+                member = "simpleMessage",
+                type = Criteria.HandlerType.SIGNAL
+        )
+        public void simpleMessage(SimpleMessage simpleMessage){
+            this.latch.countDown();
+        }
     }
 
     @DbusSignal(
@@ -115,6 +139,17 @@ public class SameThreadSignals {
     )
     public class ComplexSignal extends Signal<ArrayRecursiveObject>{
         public ComplexSignal(ArrayRecursiveObject msg) {
+            super(msg);
+        }
+    }
+
+    @DbusSignal(
+            path = "/Benchmarks/SingleThreadSignals",
+            interfaceName = "Benchmarks.SingleThreadSignals",
+            member = "simpleMessage"
+    )
+    public class SimpleSignal extends Signal<SimpleMessage>{
+        public SimpleSignal(SimpleMessage msg) {
             super(msg);
         }
     }

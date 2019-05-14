@@ -50,7 +50,7 @@ public abstract class Message implements Serializable {
                     throw new IllegalStateException("Unknown type detected: "+element.toString());
                 }
             }catch (Exception e){
-                throw new IllegalStateException("An exception was raised during serialization",e);
+                throw new IllegalStateException("An exception was raised during serialization "+e.toString(),e);
             }
             i++;
         }
