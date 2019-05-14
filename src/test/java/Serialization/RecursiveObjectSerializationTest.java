@@ -1,8 +1,8 @@
 package Serialization;
 
 import Common.DBusTestCase;
-import Serialization.DBusObjects.ArrayRecursiveObject;
-import Serialization.DBusObjects.RecursiveObject;
+import Common.DBusObjects.ArrayRecursiveObject;
+import Common.DBusObjects.RecursiveObject;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;

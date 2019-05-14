@@ -2,7 +2,7 @@ package Call;
 
 import Common.DBusTestCase;
 import Common.Listener;
-import Common.StringMessage;
+import Common.DBusObjects.StringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;

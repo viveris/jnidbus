@@ -1,5 +1,6 @@
 package benchmarks;
 
+import Common.DBusObjects.ArrayRecursiveObject;
 import Common.DBusTestCase;
 import fr.viveris.vizada.jnidbus.BusType;
 import fr.viveris.vizada.jnidbus.Dbus;
@@ -40,14 +41,34 @@ public class SameThreadSignals {
 
     @Benchmark
     @OperationsPerInvocation(EventLoop.SENDING_QUEUE_SIZE)
-    public void singleThreadSendReceive() throws InterruptedException {
+    public void singleThreadSendReceiveEmpty() throws InterruptedException {
         this.handler.latch = new CountDownLatch(EventLoop.SENDING_QUEUE_SIZE);
         for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
-            try{
-                this.sender.sendSignal(new EmptySignal());
-            }catch (Exception e){
-                System.out.println("AH!");
-            }
+            this.sender.sendSignal(new EmptySignal());
+        }
+        this.handler.latch.await();
+    }
+
+    @Benchmark
+    @OperationsPerInvocation(EventLoop.SENDING_QUEUE_SIZE)
+    public void singleThreadSendReceiveComplex() throws InterruptedException {
+        this.handler.latch = new CountDownLatch(EventLoop.SENDING_QUEUE_SIZE);
+
+        ArrayRecursiveObject obj = new ArrayRecursiveObject();
+        ArrayRecursiveObject.SubArrayRecursiveObject sub1 = new ArrayRecursiveObject.SubArrayRecursiveObject();
+        ArrayRecursiveObject.SubArrayRecursiveObject sub2 = new ArrayRecursiveObject.SubArrayRecursiveObject();
+        sub1.setInteger(42);
+        sub1.getStrings().add("comp1");
+        sub1.getStrings().add("comp2");
+        sub1.getStrings().add("comp3");
+        sub2.setInteger(24);
+        sub2.getStrings().add("comp11");
+        sub2.getStrings().add("comp21");
+        obj.getObjects().add(sub1);
+        obj.getObjects().add(sub2);
+
+        for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
+            this.sender.sendSignal(new ComplexSignal(obj));
         }
         this.handler.latch.await();
     }
@@ -66,6 +87,14 @@ public class SameThreadSignals {
         public void emptyMessage(Message.EmptyMessage emptyMessage){
             this.latch.countDown();
         }
+
+        @HandlerMethod(
+                member = "complexMessage",
+                type = Criteria.HandlerType.SIGNAL
+        )
+        public void complexMessage(ArrayRecursiveObject complexMessage){
+            this.latch.countDown();
+        }
     }
 
     @DbusSignal(
@@ -76,6 +105,17 @@ public class SameThreadSignals {
     public class EmptySignal extends Signal<Message.EmptyMessage>{
         public EmptySignal() {
             super(Message.EMPTY);
+        }
+    }
+
+    @DbusSignal(
+            path = "/Benchmarks/SingleThreadSignals",
+            interfaceName = "Benchmarks.SingleThreadSignals",
+            member = "complexMessage"
+    )
+    public class ComplexSignal extends Signal<ArrayRecursiveObject>{
+        public ComplexSignal(ArrayRecursiveObject msg) {
+            super(msg);
         }
     }
 }

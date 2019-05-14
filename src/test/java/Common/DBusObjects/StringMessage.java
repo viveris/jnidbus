@@ -1,4 +1,4 @@
-package Common;
+package Common.DBusObjects;
 
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusType;

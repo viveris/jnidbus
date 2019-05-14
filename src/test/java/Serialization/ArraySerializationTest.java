@@ -1,8 +1,8 @@
 package Serialization;
 
 import Common.DBusTestCase;
-import Serialization.DBusObjects.CollectionArray;
-import Serialization.DBusObjects.CollectionOfCollectionArray;
+import Common.DBusObjects.CollectionArray;
+import Common.DBusObjects.CollectionOfCollectionArray;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
