@@ -2,9 +2,12 @@ package fr.viveris.vizada.jnidbus.message;
 
 import fr.viveris.vizada.jnidbus.exception.MessageSignatureMismatch;
 import fr.viveris.vizada.jnidbus.serialization.*;
+import fr.viveris.vizada.jnidbus.serialization.cache.Cache;
+import fr.viveris.vizada.jnidbus.serialization.cache.CachedEntity;
 import fr.viveris.vizada.jnidbus.serialization.signature.Signature;
 import fr.viveris.vizada.jnidbus.serialization.signature.SignatureElement;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -13,36 +16,31 @@ import java.util.*;
 public abstract class Message implements Serializable {
     public static final EmptyMessage EMPTY = new EmptyMessage();
 
+    //the reflection cache is stored in a weak hash map in order to correctly free a class loader when not needed anymore.
+    //this si also made so classes with the same name but loaded by two different class loader can have their own cache
+    private static final WeakHashMap<ClassLoader, Cache> CACHE = new WeakHashMap<>();
+
 
     @Override
     public DBusObject serialize() {
-        DBusType type = this.getClass().getAnnotation(DBusType.class);
         Class<? extends Message> clazz = this.getClass();
-
-        if(type == null) throw new IllegalStateException("No DBusType annotation found");
+        CachedEntity cachedEntity = this.retreiveFromCache(clazz);
 
         //set the array length at the number of field and iterate on every char of the signature
-        Object[] values = new Object[type.fields().length];
+        Object[] values = new Object[cachedEntity.getFields().length];
         int i = 0;
-        for(SignatureElement element : new Signature(type.signature())){
-            //generate getter name
-            String getterName = "get" + Character.toUpperCase(type.fields()[i].charAt(0)) + type.fields()[i].substring(1);
+        for(SignatureElement element : new Signature(cachedEntity.getSignature())){
+            String fieldName = cachedEntity.getFields()[i];
 
             try{
-                Method getter = clazz.getDeclaredMethod(getterName);
+                Method getter = cachedEntity.getGetter(fieldName);
                 //primitive types don't need any kind of processing beside casting
                 if(element.isPrimitive()){
                     values[i] = getter.invoke(this);
                 }else if(element.isArray()){
-                    //check what the contained type is, if the type is primitive (ie. not a struct), serialize tight now, else iterate
-                    Object value = getter.invoke(this);
-
-                    if(value instanceof List){
-                        List collection = (List)value;
-                        values[i] = Message.serializeList(collection,element,((ParameterizedType)getter.getGenericReturnType()).getActualTypeArguments()[0]);
-                    }else {
-                        throw new IllegalArgumentException("The signature returned by " + getterName + " is not a List");
-                    }
+                    //we can directly cas as List as the cached entity checked this
+                    List value = (List) getter.invoke(this);
+                    values[i] = Message.serializeList(value,element,((ParameterizedType)getter.getGenericReturnType()).getActualTypeArguments()[0]);
 
                 }else if(element.isObject()){
                     values[i] = ((Serializable)getter.invoke(this)).serialize();
@@ -55,40 +53,33 @@ public abstract class Message implements Serializable {
             i++;
         }
 
-        return new DBusObject(type.signature(),values);
+        return new DBusObject(cachedEntity.getSignature(),values);
     }
 
     @Override
     public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
-        DBusType type = this.getClass().getAnnotation(DBusType.class);
         Class<? extends Message> clazz = this.getClass();
+        CachedEntity cachedEntity = this.retreiveFromCache(clazz);
 
-        if(type == null) throw new IllegalStateException("No DBusType annotation found");
-        if(!type.signature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+type.signature()+" but got "+obj.getSignature());
+        if(!cachedEntity.getSignature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+cachedEntity.getSignature()+" but got "+obj.getSignature());
 
         Object[] values = obj.getValues();
         int i = 0;
-        for(SignatureElement element : new Signature(type.signature())){
-            String getterName = "set" + Character.toUpperCase(type.fields()[i].charAt(0)) + type.fields()[i].substring(1);
+        for(SignatureElement element : new Signature(cachedEntity.getSignature())){
+            String fieldName = cachedEntity.getFields()[i];
 
             try{
-                Method setter = null;
+                Method setter = cachedEntity.getSetter(fieldName);
                 if(element.isPrimitive()){
-                    setter = clazz.getDeclaredMethod(getterName,clazz.getDeclaredField(type.fields()[i]).getType());
                     setter.invoke(this,values[i]);
                 }else if(element.isArray()){
-                    try{
-                        setter = clazz.getDeclaredMethod(getterName,List.class);
-                        setter.invoke(this,Message.unserializeList((Object[])values[i],element,((ParameterizedType)setter.getGenericParameterTypes()[0]).getActualTypeArguments()[0]));
-                    }catch (NoSuchMethodException e){
-                        throw new IllegalStateException("Unknown list getter "+getterName);
-                    }
+                    setter.invoke(this,Message.unserializeList((Object[])values[i],element,((ParameterizedType)setter.getGenericParameterTypes()[0]).getActualTypeArguments()[0]));
                 }else if(element.isObject()){
-                    Class<?> objClazz = clazz.getDeclaredField(type.fields()[i]).getType();
+                    Class<?> objClazz = clazz.getDeclaredField(fieldName).getType();
                     if(!Serializable.class.isAssignableFrom(objClazz)) throw new IllegalStateException("The setter "+setter.getName()+" takes a non-serializable type as parameter");
                     Serializable unserialized = objClazz.asSubclass(Serializable.class).newInstance();
                     unserialized.unserialize((DBusObject)values[i]);
-                    clazz.getDeclaredMethod(getterName,objClazz).invoke(this,unserialized);
+                    setter.invoke(this,unserialized);
 
                 }else{
                     throw new IllegalStateException("Unknown type detected: "+element);
@@ -142,11 +133,78 @@ public abstract class Message implements Serializable {
         }
     }
 
+    /**
+     * This method will test that its own signature and the one of its child entities match. If so the metadata will be cached for faster
+     * serialization/unserialization.
+     */
+    public CachedEntity testAndCache() throws Exception{
+        Class<? extends Message> clazz = this.getClass();
+
+        //check if the entity is in cache, if so everything have already been chacked and cached
+        if(!CACHE.containsKey(clazz.getClassLoader())) CACHE.put(clazz.getClassLoader(),new Cache());
+        if(CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName()) != null) return CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName());
+
+        DBusType type = this.getClass().getAnnotation(DBusType.class);
+        if(type == null) throw new IllegalStateException("No DBusType annotation found");
+        //TODO check signature
+
+        Constructor<? extends Message> constructor;
+        try {
+            constructor = clazz.getConstructor();
+        } catch (NoSuchMethodException e) {
+            throw new IllegalStateException("No public empty constructor found");
+        }
+
+        CachedEntity cachedEntity = new CachedEntity(type.signature(),type.fields(),constructor);
+
+        //generate getter and setter list
+        int i = 0;
+        for(SignatureElement element : new Signature(type.signature())){
+            String fieldName = type.fields()[i];
+            String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+            String getterName = "get" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+
+            //TODO: checks
+
+            Method getter = clazz.getDeclaredMethod(getterName);
+            cachedEntity.addGetter(fieldName,getter);
+
+            Method setter = clazz.getDeclaredMethod(setterName,clazz.getDeclaredField(fieldName).getType());
+            cachedEntity.addSetter(fieldName,setter);
+
+            i++;
+        }
+
+        //put cached entity in global cache
+        Cache cacheContainer = CACHE.get(clazz.getClassLoader());
+        cacheContainer.addCachedEntity(clazz.getName(),cachedEntity);
+        return cachedEntity;
+    }
+
+    private CachedEntity retreiveFromCache(Class<? extends Message> clazz){
+        //try to retrieve from cache or create cache
+        Cache cache = CACHE.get(clazz.getClassLoader());
+        CachedEntity cachedEntity;
+        if(cache == null){
+            cachedEntity = null;
+        }else{
+            cachedEntity = cache.getCachedEntity(clazz.getName());
+        }
+        if(cachedEntity == null){
+            try {
+                cachedEntity = this.testAndCache();
+            } catch (Exception e) {
+                throw new IllegalStateException("Message validity check failed: "+e,e);
+            }
+        }
+        return cachedEntity;
+    }
+
     @DBusType(
             signature = "",
             fields = ""
     )
     public static class EmptyMessage extends Message{
-        private EmptyMessage(){}
+        public EmptyMessage(){}
     }
 }
