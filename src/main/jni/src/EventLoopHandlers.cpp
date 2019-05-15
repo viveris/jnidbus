@@ -17,11 +17,13 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
   get_env(ctx,&env);
   
   DBusMessageIter rootIter;
-  DBusSignatureIter signatureIter;
-  const char* rawSignature = dbus_message_get_signature(msg);
   dbus_message_iter_init(msg, &rootIter);
-  dbus_signature_iter_init(&signatureIter,rawSignature);
-  jobject jvmObject = unserialize(ctx,&rootIter,&signatureIter);
+  jobject jvmObject = unserialize(ctx,&rootIter);
+  //set the object signature
+  env->SetObjectField(
+      jvmObject,
+      find_field(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"),
+      env->NewStringUTF(dbus_message_get_signature(msg)));
 
   //message metadata
   const char * interface = dbus_message_get_interface(msg);
@@ -114,11 +116,12 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
   //else, unserialize and call the notify() method  
   }else{
     DBusMessageIter rootIter;
-    DBusSignatureIter signatureIter;
-    const char* rawSignature = dbus_message_get_signature(msg);
     dbus_message_iter_init(msg, &rootIter);
-    dbus_signature_iter_init(&signatureIter,rawSignature);
-    jobject jvmObject = unserialize(ctx,&rootIter,&signatureIter);
+    jobject jvmObject = unserialize(ctx,&rootIter);
+    env->SetObjectField(
+      jvmObject,
+      find_field(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"),
+      env->NewStringUTF(dbus_message_get_signature(msg)));
 
     env->CallVoidMethod(
       pCtx->pending_call,

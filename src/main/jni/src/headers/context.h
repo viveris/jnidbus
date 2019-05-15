@@ -8,7 +8,7 @@
 #define _context_headers_
 
     #ifndef EPOLL_MAX_EVENTS
-    #define EPOLL_MAX_EVENTS (int) 32
+    #define EPOLL_MAX_EVENTS (int) 64
     #endif
 
     /**

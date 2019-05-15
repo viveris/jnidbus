@@ -40,6 +40,11 @@ public class SameThreadSignals {
         }
     }
 
+    @TearDown
+    public void teardown() throws Exception {
+        this.sender.close();
+    }
+
     @Benchmark
     @OperationsPerInvocation(EventLoop.SENDING_QUEUE_SIZE)
     public void singleThreadSendReceiveEmpty() throws InterruptedException {

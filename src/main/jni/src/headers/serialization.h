@@ -18,7 +18,7 @@ void serialize(context* ctx, jobject message, DBusMessageIter* container);
  * Unserialize a DBus message iterator into a JVM Message object
  * NULL will be returned if something went wrong
  */ 
-jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter* signature);
+jobject unserialize(context* ctx, DBusMessageIter* container);
 
 
 
@@ -28,9 +28,9 @@ jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter*
 void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessageIter* container, DBusSignatureIter* signatureIter);
 
 /**
- * Transfer the container array into a JVM array and append the array signature to the given string
+ * Transfer the container array into a JVM array
  */
-jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* container, std::string* signature, DBusSignatureIter* signatureIter);
+jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* container);
 
 
 

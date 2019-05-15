@@ -56,6 +56,11 @@ public abstract class Message implements Serializable {
         return new DBusObject(cachedEntity.getSignature(),values);
     }
 
+    /**
+     * Unserialize the object from the raw DBusObject. Please not that nested DBusObject wont have their signature set and we have to do it ourself
+     * @param obj
+     * @throws MessageSignatureMismatch
+     */
     @Override
     public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
         Class<? extends Message> clazz = this.getClass();
@@ -78,7 +83,7 @@ public abstract class Message implements Serializable {
                     Class<?> objClazz = clazz.getDeclaredField(fieldName).getType();
                     if(!Serializable.class.isAssignableFrom(objClazz)) throw new IllegalStateException("The setter "+setter.getName()+" takes a non-serializable type as parameter");
                     Serializable unserialized = objClazz.asSubclass(Serializable.class).newInstance();
-                    unserialized.unserialize((DBusObject)values[i]);
+                    unserialized.unserialize(new DBusObject(element.getSignatureString(),((DBusObject)values[i]).getValues()));
                     setter.invoke(this,unserialized);
 
                 }else{
@@ -124,7 +129,7 @@ public abstract class Message implements Serializable {
                         if(!(o instanceof DBusObject)) throw new IllegalStateException("The values are not unserializable objects");
                         Serializable obj = ((Class<? extends Serializable>)genericType).newInstance();
                         //generate DBusObject from raw data and signature element object
-                        obj.unserialize((DBusObject)o);
+                        obj.unserialize(new DBusObject(signature.getSignature().getFirst().getSignatureString(),((DBusObject)o).getValues()));
                         list.add(obj);
                     }
                 }
