@@ -57,8 +57,8 @@ public class SameThreadSignals {
         SimpleMessage msg = new SimpleMessage();
         msg.setInt1(45000);
         msg.setInt2(684000);
-        msg.setString1("string 1 whouhou");
-        msg.setString2("string 2 qsdgsdgh");
+        msg.setString1("string 1");
+        msg.setString2("string 2");
         for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
             this.sender.sendSignal(new SimpleSignal(msg));
         }

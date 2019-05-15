@@ -58,6 +58,13 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
     //put event loop in context
     ctx->eventLoop = env->NewGlobalRef(target);
 
+    //put lock object in context
+    jobject wakekup_lock = env->GetObjectField(ctx->eventLoop,env->GetFieldID(find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/EventLoop"),"wakeupLock","Ljava/lang/Object;"));
+    ctx->wakeup_lock = env->NewGlobalRef(wakekup_lock);
+
+    //set field ID of the should wakeup flag
+    ctx->should_wakeup_flag = env->GetFieldID(find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/EventLoop"),"shouldWakeup","Z");
+
     //add watch handlers
     dbus_connection_set_watch_functions(ctx->connection,add_watch,remove_watch,toggle_watch,ctx,NULL);
 
@@ -85,6 +92,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tic
 
     //wait for event
     int numberSelected = epoll_wait(ctx->epollFD,events,EPOLL_MAX_EVENTS,(int)timeout);
+
+    //set the wakeup flag to false
+    env->MonitorEnter(ctx->wakeup_lock);
+    env->SetBooleanField(target,ctx->should_wakeup_flag,JNI_FALSE);
+    env->MonitorExit(ctx->wakeup_lock);
 
     //iterate through what epoll selected
     for (int i = 0; i < numberSelected; i++){

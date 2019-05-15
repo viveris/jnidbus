@@ -36,6 +36,10 @@
         epoll_event* epollStruct;
         //JVM event loop object
         jobject eventLoop;
+        //wakeup lock object
+        jobject wakeup_lock;
+        //should wakeup flag
+        jfieldID should_wakeup_flag;
         //meta-class cache
         std::map<std::string,jclass> class_cache;
     };

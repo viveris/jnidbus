@@ -39,4 +39,5 @@ void close_context(context* ctx){
     free(ctx->epollStruct);
     free(ctx->bus_name);
     env->DeleteGlobalRef(ctx->eventLoop);
+    env->DeleteGlobalRef(ctx->wakeup_lock);
 }

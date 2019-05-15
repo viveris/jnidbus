@@ -21,7 +21,10 @@ public class EventLoop implements Closeable {
 
     private AtomicBoolean isClosed = new AtomicBoolean(true);
 
-    private AtomicInteger inQueue = new AtomicInteger(0);
+    //used by the JNI to synchronize wakeup call with the event loop state
+    private final Object wakeupLock = new Object();
+
+    volatile private boolean shouldWakeup = false;
 
     /**
      * Thread running the event loop
@@ -86,11 +89,13 @@ public class EventLoop implements Closeable {
         this.startBarrier.countDown();
 
         while(!this.isClosed.get()){
+            //from now, any message added to queue may or may not be processed, the caller should always wakeup
+            this.shouldWakeup = true;
+
             //add dispatchers
             while(!this.handlerAddingQueue.isEmpty()){
                 Dispatcher d = this.handlerAddingQueue.poll();
                 this.addPathHandler(this.dBusContextPointer,d.getPath(),d);
-                this.inQueue.decrementAndGet();
             }
 
             //limit the number of send per tick to 100 (to avoid reading starvation)
@@ -119,34 +124,35 @@ public class EventLoop implements Closeable {
                     this.sendSignal(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage());
                 }
                 i++;
-                this.inQueue.decrementAndGet();
             }
 
             //launch tick
-            if(this.inQueue.get() > 0){
-                this.tick(this.dBusContextPointer,0);
-            }else{
-                this.tick(this.dBusContextPointer,-1);
-            }
+            this.tick(this.dBusContextPointer,-1);
         }
 
         this.connection.close();
     }
 
     public void addPathHandler(Dispatcher dispatcher){
-        this.inQueue.incrementAndGet();
         if(this.checkEventLoop()){
             this.handlerAddingQueue.add(dispatcher);
-            this.wakeup(this.dBusContextPointer);
+            synchronized (this.wakeupLock){
+                if(shouldWakeup){
+                    this.wakeup(this.dBusContextPointer);
+                }
+            }
         }
     }
 
 
     public void send(AbstractSendingRequest request){
-        this.inQueue.incrementAndGet();
         if(this.checkEventLoop()){
             this.signalSendingQueue.add(request);
-            this.wakeup(this.dBusContextPointer);
+            synchronized (this.wakeupLock) {
+                if (shouldWakeup) {
+                    this.wakeup(this.dBusContextPointer);
+                }
+            }
         }
     }
 
@@ -159,9 +165,10 @@ public class EventLoop implements Closeable {
 
     @Override
     public void close() throws IOException {
-        try { this.startBarrier.await(); } catch (InterruptedException e) { }
-        this.isClosed.set(true);
-        this.wakeup(this.dBusContextPointer);
+        if(this.checkEventLoop()){
+            this.isClosed.set(true);
+            this.wakeup(this.dBusContextPointer);
+        }
     }
 
 }
