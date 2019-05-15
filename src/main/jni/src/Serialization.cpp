@@ -6,64 +6,63 @@ void serialize(context* ctx, jobject serialized, DBusMessageIter* container){
     JNIEnv* env;
     get_env(ctx,&env);
 
-    //if the serialization went well
-    if(serialized != NULL){
-        jclass dbusObjectClass = find_class(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject");
-        
-        //get signature and values, then transfer them to DBus
-        jstring dbusTypesJVM = (jstring) env->CallObjectMethod(serialized, env->GetMethodID(dbusObjectClass, "getSignature", "()Ljava/lang/String;"));
-        jobjectArray dbusValues = (jobjectArray) env->CallObjectMethod(serialized, env->GetMethodID(dbusObjectClass, "getValues", "()[Ljava/lang/Object;"));
-        const char* dbusTypesNative = env->GetStringUTFChars(dbusTypesJVM, 0);
-        
-        if(!dbus_signature_validate(dbusTypesNative,NULL)){
-            env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"The given signture is not a valid DBus signature");
-        }else if(strlen(dbusTypesNative) > 0){
-            //cut the signature in single char and transform the JVM types in primitive types
-            jobject valueJVM;
-            int i = 0;
-            DBusSignatureIter signatureIter;
-            dbus_signature_iter_init(&signatureIter,dbusTypesNative);
-            do{
-                valueJVM = env->GetObjectArrayElement(dbusValues,i++);
-                int currentSignature = dbus_signature_iter_get_current_type(&signatureIter);
-                //if the value is a string, transform to primitive char*, put it in the message and free it
-                //there is no risk of use-after-free as DBus copy the string in an internal buffer.
-                switch(currentSignature){
-                    case DBUS_TYPE_ARRAY:
-                    {
-                        DBusSignatureIter sub_signature;
-                        dbus_signature_iter_recurse(&signatureIter,&sub_signature);
-                        DBusMessageIter sub_container;
-                        char* signature = dbus_signature_iter_get_signature(&sub_signature);
-                        dbus_message_iter_open_container(container,DBUS_TYPE_ARRAY,signature,&sub_container);
-                        dbus_free(signature);
-                        serialize_array(ctx,dbus_signature_iter_get_current_type(&sub_signature),(jobjectArray) valueJVM, &sub_container,&sub_signature);
-                        dbus_message_iter_close_container(container,&sub_container);
-                        break;
-                    }
-                    case DBUS_TYPE_STRUCT:
-                    {
-                        DBusMessageIter sub_container;
-                        dbus_message_iter_open_container(container,DBUS_TYPE_STRUCT,NULL,&sub_container);
-                        serialize(ctx,valueJVM,&sub_container);
-                        dbus_message_iter_close_container(container,&sub_container);
-                        break;
-                    }
-                    case DBUS_TYPE_INVALID:
-                    {
-                        //do nothing, it means the iterator is finished
-                        break;
-                    }
-                    default:
-                    {
-                        serialize_element(ctx,currentSignature,valueJVM,container);
-                        break;
-                    }
+    const char* dbus_object_class_name = "fr/viveris/vizada/jnidbus/serialization/DBusObject";
+    jclass dbusObjectClass = find_class(ctx,dbus_object_class_name);
+    
+    //get signature and values, then transfer them to DBus
+    jstring dbusTypesJVM = (jstring) env->GetObjectField(serialized, find_field(ctx,dbus_object_class_name,"signature", "Ljava/lang/String;"));
+    jobjectArray dbusValues = (jobjectArray) env->GetObjectField(serialized, find_field(ctx,dbus_object_class_name,"values", "[Ljava/lang/Object;"));
+    const char* dbusTypesNative = env->GetStringUTFChars(dbusTypesJVM, 0);
+    
+    if(!dbus_signature_validate(dbusTypesNative,NULL)){
+        env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"The given signture is not a valid DBus signature");
+    }else if(strlen(dbusTypesNative) > 0){
+        //cut the signature in single char and transform the JVM types in primitive types
+        jobject valueJVM;
+        int i = 0;
+        DBusSignatureIter signatureIter;
+        dbus_signature_iter_init(&signatureIter,dbusTypesNative);
+        do{
+            valueJVM = env->GetObjectArrayElement(dbusValues,i++);
+            int currentSignature = dbus_signature_iter_get_current_type(&signatureIter);
+            //if the value is a string, transform to primitive char*, put it in the message and free it
+            //there is no risk of use-after-free as DBus copy the string in an internal buffer.
+            switch(currentSignature){
+                case DBUS_TYPE_ARRAY:
+                {
+                    DBusSignatureIter sub_signature;
+                    dbus_signature_iter_recurse(&signatureIter,&sub_signature);
+                    DBusMessageIter sub_container;
+                    char* signature = dbus_signature_iter_get_signature(&sub_signature);
+                    dbus_message_iter_open_container(container,DBUS_TYPE_ARRAY,signature,&sub_container);
+                    dbus_free(signature);
+                    serialize_array(ctx,dbus_signature_iter_get_current_type(&sub_signature),(jobjectArray) valueJVM, &sub_container,&sub_signature);
+                    dbus_message_iter_close_container(container,&sub_container);
+                    break;
                 }
-            }while(dbus_signature_iter_next(&signatureIter) && !env->ExceptionOccurred());
-        }
-        env->ReleaseStringUTFChars(dbusTypesJVM, dbusTypesNative);
+                case DBUS_TYPE_STRUCT:
+                {
+                    DBusMessageIter sub_container;
+                    dbus_message_iter_open_container(container,DBUS_TYPE_STRUCT,NULL,&sub_container);
+                    serialize(ctx,valueJVM,&sub_container);
+                    dbus_message_iter_close_container(container,&sub_container);
+                    break;
+                }
+                case DBUS_TYPE_INVALID:
+                {
+                    //do nothing, it means the iterator is finished
+                    break;
+                }
+                default:
+                {
+                    serialize_element(ctx,currentSignature,valueJVM,container);
+                    break;
+                }
+            }
+            env->DeleteLocalRef(valueJVM);
+        }while(dbus_signature_iter_next(&signatureIter) && !env->ExceptionOccurred());
     }
+    env->ReleaseStringUTFChars(dbusTypesJVM, dbusTypesNative);
 }
 
 jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter* signatureIter){
@@ -73,7 +72,8 @@ jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter*
     vector<jobject> values;
     //we have to build the container signature ourself as DBus does not give us struct signatures
     std::string signature = std::string();
-    jclass dbusObjectClass = find_class(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject");
+    const char* dbus_object_class_name = "fr/viveris/vizada/jnidbus/serialization/DBusObject";
+    jclass dbusObjectClass = find_class(ctx,dbus_object_class_name);
 
 
     do{
@@ -96,7 +96,7 @@ jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter*
                 jobject unserialized = (jobject) unserialize(ctx,&sub_container,&sub_signature);
 
                 //add struct signature to parent signature
-                jstring unserialized_signatureJVM = (jstring) env->GetObjectField(unserialized,env->GetFieldID(dbusObjectClass,"signature","Ljava/lang/String;"));
+                jstring unserialized_signatureJVM = (jstring) env->GetObjectField(unserialized,find_field(ctx,dbus_object_class_name,"signature","Ljava/lang/String;"));
                 const char* unserialized_signature = env->GetStringUTFChars(unserialized_signatureJVM,0);
                 signature += DBUS_STRUCT_BEGIN_CHAR;
                 signature.append(unserialized_signature);
@@ -119,7 +119,7 @@ jobject unserialize(context* ctx, DBusMessageIter* container, DBusSignatureIter*
         }
     }while(dbus_signature_iter_next(signatureIter) && dbus_message_iter_next(container));
 
-    jmethodID constructor = env->GetMethodID(dbusObjectClass, "<init>", "(Ljava/lang/String;[Ljava/lang/Object;)V");
+    jmethodID constructor = find_method(ctx,dbus_object_class_name,"<init>","(Ljava/lang/String;[Ljava/lang/Object;)V");
     jobjectArray objectArray = env->NewObjectArray(values.size(),env->FindClass("java/lang/Object"),NULL);
     
     //fill array
@@ -158,6 +158,7 @@ void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessag
             while(i < array_length){
                 valueJVM = env->GetObjectArrayElement(array,i++);
                 serialize_array(ctx,dbus_signature_iter_get_current_type(&sub_signature),(jobjectArray) valueJVM, &sub_container,&sub_signature);
+                env->DeleteLocalRef(valueJVM);
             }
         }
 
@@ -172,6 +173,7 @@ void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessag
             valueJVM = env->GetObjectArrayElement(array,i++);
             serialize(ctx,valueJVM,&sub_container);
             dbus_message_iter_close_container(container,&sub_container);
+            env->DeleteLocalRef(valueJVM);
         }
     }else{
         if(array_length > 0){
@@ -181,6 +183,7 @@ void serialize_array(context* ctx, int dbus_type, jobjectArray array, DBusMessag
             while(i < array_length){
                 valueJVM = env->GetObjectArrayElement(array,i++);
                 serialize_element(ctx,dbus_type,valueJVM,container);
+                env->DeleteLocalRef(valueJVM);
             }
         }
     }
@@ -243,7 +246,7 @@ jobjectArray unserialize_array(context* ctx, int dbus_type, DBusMessageIter* con
             }
         }while (dbus_message_iter_next(container));
         //add the struct signature
-        jstring unserialized_signatureJVM = (jstring) env->GetObjectField(signature_object,env->GetFieldID(find_class(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject"),"signature","Ljava/lang/String;"));
+        jstring unserialized_signatureJVM = (jstring) env->GetObjectField(signature_object,find_field(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"));
         const char* unserialized_signature = env->GetStringUTFChars(unserialized_signatureJVM,0);
         signature->operator+=(DBUS_STRUCT_BEGIN_CHAR);
         signature->append(unserialized_signature);
@@ -285,8 +288,7 @@ void serialize_element(context* ctx, int dbus_type, jobject object, DBusMessageI
         }
         case DBUS_TYPE_INT32:
         {
-            jclass intClass = env->FindClass("java/lang/Integer");
-            jint valueNative = env->CallIntMethod(object,env->GetMethodID(intClass, "intValue", "()I"));
+            jint valueNative = env->CallIntMethod(object,find_method(ctx,"java/lang/Integer","intValue","()I"));
             dbus_message_iter_append_basic(container, DBUS_TYPE_INT32, &valueNative);
             break;
         }
@@ -325,7 +327,7 @@ jobject unserialize_element(context* ctx, DBusMessageIter* container){
             int value;
             dbus_message_iter_get_basic(container, &value);
             jclass integerClass = find_class(ctx,"java/lang/Integer");
-            jmethodID constructor = env->GetMethodID(integerClass, "<init>", "(I)V");
+            jmethodID constructor = find_method(ctx,"java/lang/Integer","<init>","(I)V");
             return env->NewObject(integerClass,constructor,value);
         }
         case DBUS_TYPE_INVALID:

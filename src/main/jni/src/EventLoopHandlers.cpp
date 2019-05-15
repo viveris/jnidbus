@@ -36,8 +36,9 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
   //Call the JVM handler method, the method will return false if the message was a called and that no handler were found, true instead
   jboolean wasHandled = env->CallBooleanMethod(
     handlerCtx->dispatcher,
-    env->GetMethodID(
-      find_class(ctx,"fr/viveris/vizada/jnidbus/dispatching/Dispatcher"), 
+    find_method(
+      ctx,
+      "fr/viveris/vizada/jnidbus/dispatching/Dispatcher", 
       "dispatch", 
       "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;Ljava/lang/String;Ljava/lang/String;J)Z"
     ),
@@ -100,8 +101,9 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
     dbus_set_error_from_message(&err,msg);
     env->CallVoidMethod(
       pCtx->pending_call,
-      env->GetMethodID(
-        find_class(ctx,"fr/viveris/vizada/jnidbus/message/PendingCall"), 
+      find_method(
+        ctx,
+        "fr/viveris/vizada/jnidbus/message/PendingCall", 
         "fail", 
         "(Ljava/lang/String;Ljava/lang/String;)V"
       ),
@@ -120,8 +122,9 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
 
     env->CallVoidMethod(
       pCtx->pending_call,
-      env->GetMethodID(
-        find_class(ctx,"fr/viveris/vizada/jnidbus/message/PendingCall"), 
+      find_method(
+        ctx,
+        "fr/viveris/vizada/jnidbus/message/PendingCall", 
         "notify", 
         "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;)V"
       ),

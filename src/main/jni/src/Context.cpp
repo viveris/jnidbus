@@ -16,6 +16,42 @@ jclass find_class(context* context, const char* name){
     return classJVM;
 }
 
+jmethodID find_method(context* context, const char* class_name, const char* name, const char* signature){
+    //generate method key
+    std::string nameString = std::string()+class_name+"_"+name+"_"+signature;
+
+    //try to get from cache
+    jmethodID method_id = context->method_cache[nameString];
+
+    //if class not found, fetch from the JVM
+    if(method_id == NULL){
+        JNIEnv* env;
+        get_env(context,&env);
+        method_id = env->GetMethodID(find_class(context,class_name),name,signature);
+        context->method_cache[nameString] = method_id;
+    }
+
+    return method_id;
+}
+
+jfieldID find_field(context* context, const char* class_name, const char* name, const char* signature){
+    //generate method key
+    std::string nameString = std::string()+class_name+"_"+name+"_"+signature;
+
+    //try to get from cache
+    jfieldID method_id = context->field_cache[nameString];
+
+    //if class not found, fetch from the JVM
+    if(method_id == NULL){
+        JNIEnv* env;
+        get_env(context,&env);
+        method_id = env->GetFieldID(find_class(context,class_name),name,signature);
+        context->field_cache[nameString] = method_id;
+    }
+
+    return method_id;
+}
+
 void get_env(context* context, JNIEnv** env){
     // it is safe to call attachThread multiple times as it will do nothing when the thread
     //is already attached beside giving us the JNIEnv

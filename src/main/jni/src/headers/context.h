@@ -42,6 +42,10 @@
         jfieldID should_wakeup_flag;
         //meta-class cache
         std::map<std::string,jclass> class_cache;
+        //method ID cache
+        std::map<std::string,jmethodID> method_cache;
+        //field ID cache
+        std::map<std::string,jfieldID> field_cache;
     };
 
     /**
@@ -74,6 +78,16 @@
      * 
      */
     jclass find_class(context* context, const char* name);
+
+    /**
+     * Like the meta-class cache, this one takes care of method IDs
+     */
+    jmethodID find_method(context* context, const char* class_name, const char* name, const char* signature);
+
+    /**
+     * Same thing but for fields IDs
+     */
+    jfieldID find_field(context* context, const char* class_name, const char* name, const char* signature);
 
     /**
      * Retreive a pointer to the JNIEnv from the VM object
