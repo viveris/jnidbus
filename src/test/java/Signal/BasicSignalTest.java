@@ -4,6 +4,7 @@ import Common.DBusTestCase;
 import Common.DBusObjects.StringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.message.DbusSignal;
@@ -58,7 +59,7 @@ public class BasicSignalTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "emptySignal",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void emptySignal(Message.EmptyMessage emptyMessage){
             this.barrier.countDown();
@@ -66,7 +67,7 @@ public class BasicSignalTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "stringSignal",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void stringSignal(StringMessage string){
             if(string.getString().equals(BasicSignalTest.testString)){

@@ -2,6 +2,14 @@ package fr.viveris.vizada.jnidbus.dispatching;
 
 import java.util.Objects;
 
+/**
+ * The dispatcher will create a criteria for each message it wants to dispatch and try to match it against the criteria
+ * of the registered handlers to find which method to call and how to unserialize the message. Each handler method will
+ * correspond to a precise criteria and two handler method can not have the same criteria.
+ *
+ * The criteria will use the member, input signature and type to match against another criteria, the output signature is
+ * only there for debug purposes.
+ */
 public class Criteria {
 
     private String member;
@@ -10,6 +18,7 @@ public class Criteria {
     private HandlerType type;
 
     /**
+     * Create a new criteria, its output signature can be null
      *
      * @param member
      * @param inputSignature
@@ -60,7 +69,4 @@ public class Criteria {
         return Objects.hash(member, inputSignature, type);
     }
 
-    public enum HandlerType{
-        SIGNAL,METHOD
-    }
 }

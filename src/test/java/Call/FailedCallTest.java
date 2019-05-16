@@ -5,6 +5,7 @@ import Common.Listener;
 import Common.DBusObjects.StringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.exception.DBusException;
@@ -73,7 +74,7 @@ public class FailedCallTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "mismatchCall",
-                type = Criteria.HandlerType.METHOD
+                type = HandlerType.METHOD
         )
         public Message.EmptyMessage mismatchCall(Message.EmptyMessage emptyMessage){
             this.barrier.countDown();
@@ -82,7 +83,7 @@ public class FailedCallTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "failCall",
-                type = Criteria.HandlerType.METHOD
+                type = HandlerType.METHOD
         )
         public Message.EmptyMessage failCall(Message.EmptyMessage emptyMessage) throws DBusException {
             this.barrier.countDown();

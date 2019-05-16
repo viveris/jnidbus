@@ -7,16 +7,60 @@ import fr.viveris.vizada.jnidbus.message.sendingrequest.ReplySendingRequest;
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
+import fr.viveris.vizada.jnidbus.serialization.cache.CachedEntity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
 
+/**
+ * Object called by the JNI code when a message arrives on an object path. A dispatcher will contain a map of dbus interfaces it can dispatch to.
+ * each interface name will contain a list of criteria it can match, when a criteria is matched, it will look it up in another map whcih contains
+ * to which handler method the criteria correspond.
+ *
+ * When all of this is done and that a match is found, it will try unserialize the message and call the method. If the method is a DBus method call
+ * it will also wait for the return value and send it to the event loop to return to the caller.
+ *
+ * As dispatcher registration is asynchronous, there is a synchronization mechanism that the DBus class will use to make the call to addMessageHandler
+ * block until the dispatcher is effectively registered.
+ */
 public class Dispatcher {
+    /**
+     * Is the dispatcher effectively registered to dbus, or is it waiting to be
+     */
+    private volatile boolean isRegistered = false;
+
+    /**
+     * Barrier to which await if needed
+     */
+    private CountDownLatch barrier = new CountDownLatch(1);
+
+    /**
+     * Object path of the dispatcher
+     */
     private String path;
+
+    /**
+     * Map of all the available interfaces and their available criteria
+     */
     private HashMap<String,ArrayList<Criteria>> handlersCriterias;
+
+    /**
+     * Map of all the criteria and their handler methods
+     */
     private HashMap<Criteria,HandlerMethod> handlers;
+
+    /**
+     * Event loop to which send calls responses
+     */
     private EventLoop eventLoop;
 
+    /**
+     * Create a new dispatcher bound to the given object path
+     *
+     * @param path object path of the dispatcher
+     * @param eventLoop event loop to which send the calls replies
+     */
     public Dispatcher(String path, EventLoop eventLoop){
         this.path = path;
         this.handlersCriterias = new HashMap<>();
@@ -24,52 +68,78 @@ public class Dispatcher {
         this.eventLoop = eventLoop;
     }
 
+    /**
+     * Add a criteria for the given interface to the dispatcher. The dispatcher will check if the given criteria do not conflict with an already
+     * registered criteria and throw if it does
+     *
+     * @param interfaceName interface to which bind the criteria
+     * @param criteria criteria to register
+     * @param handlerMethod handler method to call when the criteria is matched
+     */
     public void addCriteria(String interfaceName, Criteria criteria, HandlerMethod handlerMethod){
         ArrayList<Criteria> interfaceCriterias = this.handlersCriterias.get(interfaceName);
 
+        //if the interface was never sued before, create its list of criteria
         if(interfaceCriterias == null){
             interfaceCriterias = new ArrayList<>();
             this.handlersCriterias.put(interfaceName,interfaceCriterias);
         }
 
+        //check for conflicts
         if(interfaceCriterias.contains(criteria)) throw new IllegalArgumentException("The criteria "+criteria+" is conflicting with an already registered criteria");
+
+        //add the criteria and its handler method
         interfaceCriterias.add(criteria);
         this.handlers.put(criteria,handlerMethod);
     }
 
     /**
-     * Method called by JNI when a message is received. Will return true if the message was a signal or a call that was handled, will return false if the message
-     * was a call that did not have any handler registered
+     * Method called by the JNI call when a message should be dispatched. The msgPointer parameter is nullable, if it is null then it means the message is a signal,
+     * else it is a method call to which we should reply. When the message is a call the method will return true if the message was dispatched, false if there is
+     * no handler registered for the criteria, by doing this Dbus can return a standard error to the caller telling the member could not be found
+     *
+     * @param args pre-unserialized message
+     * @param interfaceName interface on which the message was received
+     * @param member member of the message
+     * @param msgPointer pointer to the message we should reply to, can be 0
+     * @return
      */
-    public boolean dispatch(DBusObject args, String type, String member, long msgPointer) throws IllegalAccessException, InstantiationException {
-        ArrayList<Criteria> availableHandlers = this.handlersCriterias.get(type);
+    public boolean dispatch(DBusObject args, String interfaceName, String member, long msgPointer) {
+        //get the list of criteria for the given interface and return false if nothing is found
+        ArrayList<Criteria> availableHandlers = this.handlersCriterias.get(interfaceName);
+        if(availableHandlers == null) return false;
+
+        //generate the criteria from the message
         Criteria requestCriteria;
         if(msgPointer == 0){
-            requestCriteria = new Criteria(member,args.getSignature(),null, Criteria.HandlerType.SIGNAL);
+            requestCriteria = new Criteria(member,args.getSignature(),null, HandlerType.SIGNAL);
         }else{
-            requestCriteria = new Criteria(member,args.getSignature(),null, Criteria.HandlerType.METHOD);
-        }
-        if(availableHandlers == null){
-            return msgPointer == 0;
+            requestCriteria = new Criteria(member,args.getSignature(),null, HandlerType.METHOD);
         }
 
+        //try to find a matching criteria
         for(Criteria c: availableHandlers){
             if(c.equals(requestCriteria)){
                 //match found, try to unserialize
                 HandlerMethod handler = this.handlers.get(c);
                 try{
                     Serializable param;
+                    //if the message is empty, use the special EMPTY message
                     if(args.getSignature().equals("")){
                         param = Message.EMPTY;
                     }else{
-                        param = handler.getParamType().newInstance();
+                        param = handler.getInputType().newInstance();
                         param.unserialize(args);
                     }
+                    //get the return value of the handler, and if not null send a reply
                     Message returnObject = (Message) handler.call(param);
-                    if(returnObject != null){
+                    if(returnObject != null && msgPointer != 0){
                         this.eventLoop.send(new ReplySendingRequest(returnObject.serialize(),msgPointer));
+                    }else if(msgPointer != 0){
+                        //TODO: log an error as the reply from the call was null, an error should have been thrown instead
                     }
                 }catch (Exception e){
+                    //if the message is a call, reply an error
                     if(msgPointer != 0){
                         this.eventLoop.send(new ErrorReplySendingRequest(e.getCause(),msgPointer));
                     }else{
@@ -79,10 +149,28 @@ public class Dispatcher {
                 return true;
             }
         }
+        //no handler was found
+        return false;
+    }
 
-        //if the message was a signal, the fact that no handlers are registered is not a problem, but if the message is a call we must
-        //notify the caller that the method does not exists
-        return msgPointer == 0;
+    /**
+     * Called by the event loop when the dispatcher is effectively registered. It will update its state and unlock the barrier
+     */
+    public void setAsRegistered(){
+        this.isRegistered = true;
+        this.barrier.countDown();
+    }
+
+    /**
+     * await on the synchronization barrier
+     * @throws InterruptedException
+     */
+    public void awaitRegistration() throws InterruptedException {
+        this.barrier.await();
+    }
+
+    public boolean isRegistered() {
+        return isRegistered;
     }
 
     public String getPath() {

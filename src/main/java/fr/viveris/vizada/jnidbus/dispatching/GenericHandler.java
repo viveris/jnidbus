@@ -6,19 +6,31 @@ import fr.viveris.vizada.jnidbus.serialization.Serializable;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
+/**
+ * Abstract class any handler class should extend, it only define one method which will be able to generate all the criteria and
+ * handlerMethods from the declared methods.
+ */
 public abstract class GenericHandler {
 
+    /**
+     * Create a map of all the criteria and handler methods this handler provides. When generating the HandlerMethod class,
+     * the serializable types will be checked and cached so any attempt to register a handler with invalid types will throw
+     *
+     * @return map of the criteria with their corresponding handler methods
+     */
     public HashMap<Criteria,HandlerMethod> getAvailableCriterias(){
         Method[] methods = this.getClass().getMethods();
         HashMap<Criteria,HandlerMethod> returned = new HashMap<>();
 
         for(Method m : methods){
+            //check if the method is a handler method, if not keep looking
             fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod annotation = m.getAnnotation(fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod.class);
             if(annotation == null) continue;
 
+            //check method input and output
             Class<?>[] params = m.getParameterTypes();
             Class<?> returnType = m.getReturnType();
-            if(params.length != 1) throw new IllegalArgumentException("Incorrect number of parameter on an handler method");
+            if(params.length != 1) throw new IllegalArgumentException("Incorrect number of parameter on an handler method, there should be only one input parameter");
 
             DBusType paramAnnotation = params[0].getAnnotation(DBusType.class);
             DBusType returnAnnotation = returnType.getAnnotation(DBusType.class);
@@ -28,12 +40,13 @@ public abstract class GenericHandler {
                 throw new IllegalArgumentException("A handler method parameter must have the DBusType annotation and be Serializable");
             }
 
-            if(annotation.type() == Criteria.HandlerType.METHOD && (returnAnnotation == null || !Serializable.class.isAssignableFrom(returnType))){
+            if(annotation.type() == HandlerType.METHOD && (returnAnnotation == null || !Serializable.class.isAssignableFrom(returnType))){
                 throw new IllegalArgumentException("A handler method return type must have the DBusType annotation and be Serializable");
             }else if(returnAnnotation != null){
                 ouputSignature = returnAnnotation.signature();
             }
 
+            //the types are valid, put it in the map. This line will throw if the serializable types are in fact invalid
             returned.put(new Criteria(annotation.member(),paramAnnotation.signature(),ouputSignature,annotation.type()),new HandlerMethod(this,m));
 
         }

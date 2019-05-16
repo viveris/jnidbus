@@ -32,6 +32,10 @@ cmake .
 
 echo "* compiling sources"
 make
+##check for compilation errors
+if [[ $? -ne 0 ]] ; then
+    exit 1
+fi
 
 echo "* copying native library in resources"
 cp ./libjnidbus.so ../resources/libjnidbus.so

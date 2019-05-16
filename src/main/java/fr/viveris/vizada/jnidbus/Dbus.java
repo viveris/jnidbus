@@ -19,9 +19,6 @@ public class Dbus implements AutoCloseable {
         System.loadLibrary("jnidbus");
     }
 
-    //used only by the JNI to retreive the current context (connection, eventloop, cache, etc...)
-    private long dBusContextPointer;
-
     private Connection connection;
     private EventLoop eventLoop;
     private HashMap<String, Dispatcher> dispatchers;
@@ -35,11 +32,11 @@ public class Dbus implements AutoCloseable {
         this.connection = Connection.createConnection(type,busName);
         this.eventLoop = new EventLoop(this.connection);
         this.dispatchers = new HashMap<>();
-        this.dBusContextPointer = this.connection.getdBusContextPointer();
     }
 
     public void addMessageHandler(GenericHandler handler){
         Handler handlerAnnotation = handler.getClass().getAnnotation(Handler.class);
+        if(handlerAnnotation == null) throw new IllegalStateException("The given handler does not have the Handler annotation");
         HashMap<Criteria, HandlerMethod> criterias = handler.getAvailableCriterias();
         Dispatcher dispatcher = this.dispatchers.get(handlerAnnotation.path());
 
@@ -55,6 +52,11 @@ public class Dbus implements AutoCloseable {
 
         if(dispatcherCreated){
             this.eventLoop.addPathHandler(dispatcher);
+            try {
+                dispatcher.awaitRegistration();
+            } catch (InterruptedException e) {
+                throw new IllegalStateException("Dispatcher registration was interrupted");
+            }
             this.dispatchers.put(handlerAnnotation.path(),dispatcher);
         }
     }

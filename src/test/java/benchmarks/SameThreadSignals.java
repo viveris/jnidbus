@@ -8,6 +8,7 @@ import fr.viveris.vizada.jnidbus.Dbus;
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.exception.ConnectionException;
@@ -103,7 +104,7 @@ public class SameThreadSignals {
 
         @HandlerMethod(
                 member = "emptyMessage",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void emptyMessage(Message.EmptyMessage emptyMessage){
             this.latch.countDown();
@@ -111,7 +112,7 @@ public class SameThreadSignals {
 
         @HandlerMethod(
                 member = "complexMessage",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void complexMessage(ArrayRecursiveObject complexMessage){
             this.latch.countDown();
@@ -119,7 +120,7 @@ public class SameThreadSignals {
 
         @HandlerMethod(
                 member = "simpleMessage",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void simpleMessage(SimpleMessage simpleMessage){
             this.latch.countDown();

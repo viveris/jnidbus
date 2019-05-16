@@ -44,6 +44,10 @@ public class SignatureIterator  implements Iterator<SignatureElement> {
         }
     }
 
+    public void reset(){
+        this.position = 0;
+    }
+
     private String generateArraySignature(){
         StringBuilder builder = new StringBuilder();
         //do...while in order to support recursive arrays (example signature: aaax)

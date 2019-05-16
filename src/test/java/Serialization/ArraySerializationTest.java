@@ -5,6 +5,7 @@ import Common.DBusObjects.CollectionArray;
 import Common.DBusObjects.CollectionOfCollectionArray;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.message.DbusSignal;
@@ -114,7 +115,7 @@ public class ArraySerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "collectionArray",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void collectionArray(CollectionArray signal){
             this.collectionArraySignal = signal;
@@ -123,7 +124,7 @@ public class ArraySerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "collectionOfCollectionArraySignal",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void collectionOfCollectionArraySignal(CollectionOfCollectionArray signal){
             this.collectionOfCollectionArraySignal = signal;

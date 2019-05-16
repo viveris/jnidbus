@@ -24,7 +24,7 @@ public abstract class Message implements Serializable {
     @Override
     public DBusObject serialize() {
         Class<? extends Message> clazz = this.getClass();
-        CachedEntity cachedEntity = this.retreiveFromCache(clazz);
+        CachedEntity cachedEntity = Message.retreiveFromCache(clazz);
 
         //set the array length at the number of field and iterate on every char of the signature
         Object[] values = new Object[cachedEntity.getFields().length];
@@ -64,7 +64,7 @@ public abstract class Message implements Serializable {
     @Override
     public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
         Class<? extends Message> clazz = this.getClass();
-        CachedEntity cachedEntity = this.retreiveFromCache(clazz);
+        CachedEntity cachedEntity = Message.retreiveFromCache(clazz);
 
         if(!cachedEntity.getSignature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+cachedEntity.getSignature()+" but got "+obj.getSignature());
 
@@ -143,18 +143,17 @@ public abstract class Message implements Serializable {
      * This method will test that its own signature and the one of its child entities match. If so the metadata will be cached for faster
      * serialization/unserialization.
      */
-    public CachedEntity testAndCache() throws Exception{
-        Class<? extends Message> clazz = this.getClass();
+    private static CachedEntity testAndCache(Class<? extends Serializable> clazz) throws Exception{
 
         //check if the entity is in cache, if so everything have already been chacked and cached
         if(!CACHE.containsKey(clazz.getClassLoader())) CACHE.put(clazz.getClassLoader(),new Cache());
         if(CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName()) != null) return CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName());
 
-        DBusType type = this.getClass().getAnnotation(DBusType.class);
+        DBusType type = clazz.getAnnotation(DBusType.class);
         if(type == null) throw new IllegalStateException("No DBusType annotation found");
         //TODO check signature
 
-        Constructor<? extends Message> constructor;
+        Constructor<? extends Serializable> constructor;
         try {
             constructor = clazz.getConstructor();
         } catch (NoSuchMethodException e) {
@@ -187,7 +186,7 @@ public abstract class Message implements Serializable {
         return cachedEntity;
     }
 
-    private CachedEntity retreiveFromCache(Class<? extends Message> clazz){
+    public static CachedEntity retreiveFromCache(Class<? extends Serializable> clazz){
         //try to retrieve from cache or create cache
         Cache cache = CACHE.get(clazz.getClassLoader());
         CachedEntity cachedEntity;
@@ -198,7 +197,7 @@ public abstract class Message implements Serializable {
         }
         if(cachedEntity == null){
             try {
-                cachedEntity = this.testAndCache();
+                cachedEntity = Message.testAndCache(clazz);
             } catch (Exception e) {
                 throw new IllegalStateException("Message validity check failed: "+e,e);
             }

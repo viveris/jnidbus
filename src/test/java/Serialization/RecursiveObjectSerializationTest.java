@@ -5,6 +5,7 @@ import Common.DBusObjects.ArrayRecursiveObject;
 import Common.DBusObjects.RecursiveObject;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.message.DbusSignal;
@@ -95,7 +96,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "recursiveObject",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void recursiveObject(RecursiveObject signal){
             this.recursiveObject = signal;
@@ -104,7 +105,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "arrayRecursiveObject",
-                type = Criteria.HandlerType.SIGNAL
+                type = HandlerType.SIGNAL
         )
         public void arrayRecursiveObject(ArrayRecursiveObject signal){
             this.arrayRecursiveObject = signal;

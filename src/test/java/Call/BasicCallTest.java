@@ -5,6 +5,7 @@ import Common.Listener;
 import Common.DBusObjects.StringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.vizada.jnidbus.message.*;
@@ -54,7 +55,7 @@ public class BasicCallTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "emptyCall",
-                type = Criteria.HandlerType.METHOD
+                type = HandlerType.METHOD
         )
         public Message.EmptyMessage emptyCall(Message.EmptyMessage emptyMessage){
             this.barrier.countDown();
@@ -63,7 +64,7 @@ public class BasicCallTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "stringCall",
-                type = Criteria.HandlerType.METHOD
+                type = HandlerType.METHOD
         )
         public StringMessage stringCall(StringMessage msg){
             this.barrier.countDown();

@@ -1,6 +1,7 @@
 package fr.viveris.vizada.jnidbus.serialization.cache;
 
 import fr.viveris.vizada.jnidbus.message.Message;
+import fr.viveris.vizada.jnidbus.serialization.Serializable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -9,11 +10,11 @@ import java.util.HashMap;
 public class CachedEntity {
     private String signature;
     private String[] fields;
-    private Constructor<? extends Message> constructor;
+    private Constructor<? extends Serializable> constructor;
     private HashMap<String, Method> setters = new HashMap<>();
     private HashMap<String, Method> getters = new HashMap<>();
 
-    public CachedEntity(String signature, String[] fields, Constructor<? extends Message> constructor) {
+    public CachedEntity(String signature, String[] fields, Constructor<? extends Serializable> constructor) {
         this.signature = signature;
         this.fields = fields;
         this.constructor = constructor;
@@ -43,7 +44,7 @@ public class CachedEntity {
         return fields;
     }
 
-    public Message newInstance(){
+    public Serializable newInstance(){
         try {
             return this.constructor.newInstance();
         } catch (Exception e) {
