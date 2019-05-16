@@ -2,15 +2,18 @@ package fr.viveris.vizada.jnidbus;
 
 import fr.viveris.vizada.jnidbus.bindings.bus.Connection;
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
-import fr.viveris.vizada.jnidbus.exception.ConnectionException;
-import fr.viveris.vizada.jnidbus.message.sendingrequest.CallSendingRequest;
-import fr.viveris.vizada.jnidbus.message.sendingrequest.SignalSendingRequest;
-import fr.viveris.vizada.jnidbus.dispatching.*;
+import fr.viveris.vizada.jnidbus.dispatching.Criteria;
+import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
+import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.vizada.jnidbus.dispatching.HandlerMethod;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
+import fr.viveris.vizada.jnidbus.exception.ConnectionException;
 import fr.viveris.vizada.jnidbus.message.Call;
 import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
 import fr.viveris.vizada.jnidbus.message.Signal;
+import fr.viveris.vizada.jnidbus.message.sendingrequest.CallSendingRequest;
+import fr.viveris.vizada.jnidbus.message.sendingrequest.SignalSendingRequest;
 
 import java.util.HashMap;
 

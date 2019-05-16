@@ -1,6 +1,5 @@
 package fr.viveris.vizada.jnidbus.serialization.cache;
 
-import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
 
 import java.lang.reflect.Constructor;

@@ -1,8 +1,10 @@
 package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
-import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
+/**
+ * Represent a reply to be sent
+ */
 public class ReplySendingRequest extends AbstractSendingRequest {
     long messagePointer;
 

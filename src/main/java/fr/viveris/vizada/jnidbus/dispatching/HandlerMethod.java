@@ -4,7 +4,6 @@ import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
 import fr.viveris.vizada.jnidbus.serialization.cache.CachedEntity;
 
-import javax.sql.rowset.serial.SerialBlob;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 

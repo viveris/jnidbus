@@ -1,8 +1,10 @@
 package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
-import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
+/**
+ * Represent a signal to be sent
+ */
 public class SignalSendingRequest extends AbstractSendingRequest{
     private String path;
     private String interfaceName;

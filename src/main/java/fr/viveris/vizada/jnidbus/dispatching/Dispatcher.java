@@ -1,13 +1,11 @@
 package fr.viveris.vizada.jnidbus.dispatching;
 
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
-import fr.viveris.vizada.jnidbus.exception.DBusException;
+import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.ErrorReplySendingRequest;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.ReplySendingRequest;
-import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
-import fr.viveris.vizada.jnidbus.serialization.cache.CachedEntity;
 
 import java.util.ArrayList;
 import java.util.HashMap;

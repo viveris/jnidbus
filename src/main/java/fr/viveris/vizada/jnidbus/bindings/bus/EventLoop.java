@@ -1,11 +1,11 @@
 package fr.viveris.vizada.jnidbus.bindings.bus;
 
+import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
 import fr.viveris.vizada.jnidbus.exception.ClosedEventLoopException;
 import fr.viveris.vizada.jnidbus.exception.DBusException;
 import fr.viveris.vizada.jnidbus.exception.EventLoopSetupException;
-import fr.viveris.vizada.jnidbus.message.sendingrequest.*;
-import fr.viveris.vizada.jnidbus.dispatching.Dispatcher;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
+import fr.viveris.vizada.jnidbus.message.sendingrequest.*;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
 import java.io.Closeable;

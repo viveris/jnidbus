@@ -1,6 +1,5 @@
 package fr.viveris.vizada.jnidbus.dispatching.annotation;
 
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 
 import java.lang.annotation.ElementType;

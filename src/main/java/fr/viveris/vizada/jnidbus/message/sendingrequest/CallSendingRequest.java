@@ -1,9 +1,11 @@
 package fr.viveris.vizada.jnidbus.message.sendingrequest;
 
-import fr.viveris.vizada.jnidbus.message.Message;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
+/**
+ * Represent a dbus call waiting to be sent
+ */
 public class CallSendingRequest extends AbstractSendingRequest {
     private String path;
     private String interfaceName;
