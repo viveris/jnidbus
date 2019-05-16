@@ -1,5 +1,6 @@
 package fr.viveris.vizada.jnidbus.message;
 
+import fr.viveris.vizada.jnidbus.exception.MessageCheckException;
 import fr.viveris.vizada.jnidbus.exception.MessageSignatureMismatch;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 import fr.viveris.vizada.jnidbus.serialization.DBusType;
@@ -9,42 +10,62 @@ import fr.viveris.vizada.jnidbus.serialization.cache.CachedEntity;
 import fr.viveris.vizada.jnidbus.serialization.signature.Signature;
 import fr.viveris.vizada.jnidbus.serialization.signature.SignatureElement;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.*;
 
+/**
+ * Represent anything that can be sent to dbus. This class implements serialization and unserialization methods that
+ * will use reflection and the DBusType annotation to know how to perform the serialization. As the reflection is slow
+ * we use a cache to store information that will not change between serializations.
+ *
+ * An extending class serializable fields should only be:
+ *      -A string
+ *      -A primitive (or boxed type)
+ *      -A List, Nested lists and objects are supported
+ *      -Another Message class
+ */
 public abstract class Message implements Serializable {
+    /**
+     * Special message type which has an empty signature. As message of this type can often happen, we can use this
+     * static instance instead of creating your own
+     */
     public static final EmptyMessage EMPTY = new EmptyMessage();
 
-    //the reflection cache is stored in a weak hash map in order to correctly free a class loader when not needed anymore.
-    //this si also made so classes with the same name but loaded by two different class loader can have their own cache
+    /**
+     * Cache containing the reflection data. The map use a ClassLoader as a key in order to support same name classes loaded
+     * by different class loaders. In addition this map is weak so an unused class loader can be freed without issues
+     * (hot reload of classes for example)
+     */
     private static final WeakHashMap<ClassLoader, Cache> CACHE = new WeakHashMap<>();
 
 
     @Override
     public DBusObject serialize() {
+        //retrieve reflection data from the cache
         Class<? extends Message> clazz = this.getClass();
         CachedEntity cachedEntity = Message.retreiveFromCache(clazz);
 
-        //set the array length at the number of field and iterate on every char of the signature
+        //set the array length at the number of field and iterate on the signature
         Object[] values = new Object[cachedEntity.getFields().length];
         int i = 0;
         for(SignatureElement element : new Signature(cachedEntity.getSignature())){
+            //get the field name for the current signature element
             String fieldName = cachedEntity.getFields()[i];
 
             try{
+                //retrieve the getter from the cache
                 Method getter = cachedEntity.getGetter(fieldName);
-                //primitive types don't need any kind of processing beside casting
+
                 if(element.isPrimitive()){
+                    //primitive types don't need any kind of processing
                     values[i] = getter.invoke(this);
                 }else if(element.isArray()){
-                    //we can directly cas as List as the cached entity checked this
+                    //we can directly cas as List as the cached entity checked this when created then serialize it
                     List value = (List) getter.invoke(this);
                     values[i] = Message.serializeList(value,element,((ParameterizedType)getter.getGenericReturnType()).getActualTypeArguments()[0]);
 
                 }else if(element.isObject()){
+                    //recursively serialize
                     values[i] = ((Serializable)getter.invoke(this)).serialize();
                 }else{
                     throw new IllegalStateException("Unknown type detected: "+element.toString());
@@ -52,39 +73,42 @@ public abstract class Message implements Serializable {
             }catch (Exception e){
                 throw new IllegalStateException("An exception was raised during serialization "+e.toString(),e);
             }
+            //go to the next field
             i++;
         }
 
         return new DBusObject(cachedEntity.getSignature(),values);
     }
 
-    /**
-     * Unserialize the object from the raw DBusObject. Please not that nested DBusObject wont have their signature set and we have to do it ourself
-     * @param obj
-     * @throws MessageSignatureMismatch
-     */
     @Override
     public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
+        //retrieve reflection data from the cache
         Class<? extends Message> clazz = this.getClass();
         CachedEntity cachedEntity = Message.retreiveFromCache(clazz);
 
+        //check if the given pre-unserialized object have the same signature as this class
         if(!cachedEntity.getSignature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+cachedEntity.getSignature()+" but got "+obj.getSignature());
 
+        //get the value sand iterate through the signature
         Object[] values = obj.getValues();
         int i = 0;
         for(SignatureElement element : new Signature(cachedEntity.getSignature())){
+            //get the field name for the current signature element
             String fieldName = cachedEntity.getFields()[i];
 
             try{
+                //retrieve the setter from the cache
                 Method setter = cachedEntity.getSetter(fieldName);
+
                 if(element.isPrimitive()){
+                    //primitive types do not need any processing
                     setter.invoke(this,values[i]);
                 }else if(element.isArray()){
                     setter.invoke(this,Message.unserializeList((Object[])values[i],element,((ParameterizedType)setter.getGenericParameterTypes()[0]).getActualTypeArguments()[0]));
                 }else if(element.isObject()){
-                    Class<?> objClazz = clazz.getDeclaredField(fieldName).getType();
-                    if(!Serializable.class.isAssignableFrom(objClazz)) throw new IllegalStateException("The setter "+setter.getName()+" takes a non-serializable type as parameter");
-                    Serializable unserialized = objClazz.asSubclass(Serializable.class).newInstance();
+                    //retrieve the needed object class from cache and create a new instance
+                    Serializable unserialized = Message.retreiveFromCache(setter.getParameterTypes()[0].asSubclass(Serializable.class)).newInstance();
+                    //recursively unserialize
                     unserialized.unserialize(new DBusObject(element.getSignatureString(),((DBusObject)values[i]).getValues()));
                     setter.invoke(this,unserialized);
 
@@ -94,21 +118,33 @@ public abstract class Message implements Serializable {
             }catch (Exception e){
                 throw new IllegalStateException("An exception was raised during serialization",e);
             }
+            //go to the next value
             i++;
         }
     }
 
+    /**
+     * Takes a List and serialize it into a raw Object array. This method supports nested list serialization
+     *
+     * @param collection List to serialize
+     * @param signature signature of the list, used to determine if the list contains primitive types
+     * @param genericType type of the given List items, used to determine if the list contains other lists
+     * @return the list serialized as a raw object array
+     */
     private static Object[] serializeList(List collection, SignatureElement signature, Type genericType) {
+        //if the list is primitive, transform it into an array and return
         if(signature.getPrimitive() != null) return collection.toArray();
         else{
             Object[] serialized = new Object[collection.size()];
             int i = 0;
             boolean isRecusiveList = genericType instanceof ParameterizedType;
+            if(!isRecusiveList && !Serializable.class.isAssignableFrom((Class)genericType)) throw new IllegalStateException("The List contains a non-serializable type");
             for(Object o : collection){
                 if(isRecusiveList){
+                    //if the list contains other lists, recursively serialize it
                     serialized[i++] = Message.serializeList((List)o,signature.getSignature().getFirst(),((ParameterizedType)genericType).getActualTypeArguments()[0]);
                 }else{
-                    if(!Serializable.class.isAssignableFrom((Class)genericType)) throw new IllegalStateException("The List contains a non-serializable type");
+                    //else serialize the object
                     serialized[i++] = ((Serializable)o).serialize();
                 }
             }
@@ -116,21 +152,34 @@ public abstract class Message implements Serializable {
         }
     }
 
-    private static List unserializeList(Object[] values , SignatureElement signature, Type genericType) throws IllegalAccessException, InstantiationException, MessageSignatureMismatch {
+    /**
+     * Transform the given raw Object array into a List. This method supports nested arrays
+     *
+     * @param values
+     * @param signature
+     * @param genericType
+     * @return
+     * @throws MessageSignatureMismatch
+     */
+    private static List unserializeList(Object[] values , SignatureElement signature, Type genericType) throws MessageSignatureMismatch {
+        //if the array si primitive, transform it in a list
         if(signature.getPrimitive() != null){
+            //when the list is empty or null, the asList() method consider it to be an element of an array and not the array, the next line fixes this behavior
             if(values == null || values.length == 0) return Collections.emptyList();
             else return Arrays.asList(values);
         }else{
             boolean isRecusiveList = genericType instanceof ParameterizedType;
+            if(!isRecusiveList && !Serializable.class.isAssignableFrom((Class)genericType)) throw new IllegalStateException("The List contains a non-serializable type");
             List<Object> list = new ArrayList<>();
+            String elementSignatureString = signature.getSignature().getFirst().getSignatureString();
+
+            //iterate through the values an unserialize
             if(values != null){
-                String elementSignatureString = signature.getSignature().getFirst().getSignatureString();
                 for(Object o : values){
                     if(isRecusiveList){
                         list.add(Message.unserializeList((Object[]) o,signature.getSignature().getFirst(),((ParameterizedType)genericType).getActualTypeArguments()[0]));
                     }else{
-                        if(!(o instanceof DBusObject)) throw new IllegalStateException("The values are not unserializable objects");
-                        Serializable obj = ((Class<? extends Serializable>)genericType).newInstance();
+                        Serializable obj = Message.retreiveFromCache((Class<? extends Serializable>)genericType).newInstance();
                         //generate DBusObject from raw data and signature element object
                         obj.unserialize(new DBusObject(elementSignatureString,((DBusObject)o).getValues()));
                         list.add(obj);
@@ -142,19 +191,23 @@ public abstract class Message implements Serializable {
     }
 
     /**
-     * This method will test that its own signature and the one of its child entities match. If so the metadata will be cached for faster
-     * serialization/unserialization.
+     * Test if the message is valid according to its signature and fields and if so, cache its reflection data for a
+     * faster processing later
+     *
+     * @param clazz class of the message to cache
+     * @return the cached representation of the class
+     * @throws Exception
      */
-    private static CachedEntity testAndCache(Class<? extends Serializable> clazz) throws Exception{
-
-        //check if the entity is in cache, if so everything have already been chacked and cached
+    private static CachedEntity testAndCache(Class<? extends Serializable> clazz) throws MessageCheckException {
+        //check if the entity is in cache, if so everything have already been checked and cached
         if(!CACHE.containsKey(clazz.getClassLoader())) CACHE.put(clazz.getClassLoader(),new Cache());
         if(CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName()) != null) return CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName());
 
+        //check annotation
         DBusType type = clazz.getAnnotation(DBusType.class);
         if(type == null) throw new IllegalStateException("No DBusType annotation found");
-        //TODO check signature
 
+        //check constructor
         Constructor<? extends Serializable> constructor;
         try {
             constructor = clazz.getConstructor();
@@ -162,22 +215,40 @@ public abstract class Message implements Serializable {
             throw new IllegalStateException("No public empty constructor found");
         }
 
+        //create a new cache entity
         CachedEntity cachedEntity = new CachedEntity(type.signature(),type.fields(),constructor);
 
         //generate getter and setter list
         int i = 0;
         for(SignatureElement element : new Signature(type.signature())){
             String fieldName = type.fields()[i];
+            //generate setter and getter name
             String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
             String getterName = "get" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
 
-            //TODO: checks
+            Field field;
+            try{
+                field = clazz.getDeclaredField(fieldName);
+            }catch (Exception e){
+                throw new MessageCheckException("Could not find the field "+fieldName);
+            }
 
-            Method getter = clazz.getDeclaredMethod(getterName);
-            cachedEntity.addGetter(fieldName,getter);
+            //check the field against the annotation signature
+            Message.checkField(field,element);
 
-            Method setter = clazz.getDeclaredMethod(setterName,clazz.getDeclaredField(fieldName).getType());
-            cachedEntity.addSetter(fieldName,setter);
+            try {
+                Method getter = clazz.getDeclaredMethod(getterName);
+                cachedEntity.addGetter(fieldName,getter);
+            } catch (NoSuchMethodException e) {
+                throw new MessageCheckException("Could not find the getter for the field "+fieldName);
+            }
+
+            try {
+                Method setter = clazz.getDeclaredMethod(setterName,field.getType());
+                cachedEntity.addSetter(fieldName,setter);
+            } catch (NoSuchMethodException e) {
+                throw new MessageCheckException("Could not find the setter for the field "+fieldName);
+            }
 
             i++;
         }
@@ -188,6 +259,39 @@ public abstract class Message implements Serializable {
         return cachedEntity;
     }
 
+    /**
+     * Check if the given field is valid according to the given signature element
+     *
+     * @param field field to check
+     * @param element signature element used to check
+     * @throws MessageCheckException
+     */
+    private static void checkField(Field field, SignatureElement element) throws MessageCheckException{
+        if(element.isPrimitive()){
+            switch (element.getPrimitive()){
+                case STRING:
+                    if(!field.getType().equals(String.class)) throw new MessageCheckException("the field "+field.getName()+" is not of type String");
+                    break;
+                case INTEGER:
+                    if(!field.getType().equals(String.class) && !field.getType().equals(Integer.TYPE)) throw new MessageCheckException("the field "+field.getName()+" is not of type int or Integer");
+            }
+        }else if(element.isArray()){
+
+            //TODO
+
+        }else if(element.isObject()){
+            if(!Serializable.class.isAssignableFrom(field.getType())) throw new MessageCheckException("the field "+field.getName()+" does not contain a serializable type");
+            Message.testAndCache(field.getType().asSubclass(Serializable.class));
+        }
+    }
+
+    /**
+     * Try to retrieve the cached metadata for the given class, if the cache entity does not exists, check the class,
+     * try to create one and return it. If the class is invalid, it will throw
+     *
+     * @param clazz class to retrieve
+     * @return the cached entity
+     */
     public static CachedEntity retreiveFromCache(Class<? extends Serializable> clazz){
         //try to retrieve from cache or create cache
         Cache cache = CACHE.get(clazz.getClassLoader());
