@@ -10,13 +10,11 @@
 
 /**
  * Serialize a JVM Message object and transfer it to the Dbus message iterator.
- * The method will throw a JVM exception if something went wrong
  */
 void serialize(context* ctx, jobject message, DBusMessageIter* container);
 
 /**
  * Unserialize a DBus message iterator into a JVM Message object
- * NULL will be returned if something went wrong
  */ 
 jobject unserialize(context* ctx, DBusMessageIter* container);
 

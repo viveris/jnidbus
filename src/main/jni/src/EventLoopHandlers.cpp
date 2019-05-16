@@ -1,13 +1,7 @@
 #include "./headers/event_loop_handlers.h"
 
-/**
- * 
- * Method called when DBus receive a new message and want to dispatch it. This function will call the JVM dispatcher
- * registered for the current object path
- * 
- */
+
 DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, void* ctxPtr){
-  //ref the message to notify dbus we are processing it
   dbus_message_ref(msg);
 
   //get the JVM environment
@@ -62,11 +56,6 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
   }
 }
 
-/**
- * 
- * Called when unregistering a dispatched, the current implementation never do that but might in the future
- * 
- */
 void handle_dispatch_unregister(DBusConnection* connection, void* ctxPtr){
   handler_context* handlerCtx = (handler_context*) ctxPtr;
   context* ctx = (context*) handlerCtx->ctx;
@@ -78,18 +67,14 @@ void handle_dispatch_unregister(DBusConnection* connection, void* ctxPtr){
   free(handlerCtx);
 }
 
-/**
- * 
- * Function called when a pending call state changed (with an error or a success). The function will call the PendingCall JVM
- * object and delegate processing to it
- * 
- */
 void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
+  //get JVM environment
   pending_call_context* pCtx = (pending_call_context*) ctxPtr;
   context* ctx = pCtx->ctx;
   JNIEnv* env;
   get_env(ctx,&env);
 
+  //get the reply from the pending call
   DBusMessage* msg = dbus_pending_call_steal_reply(pending);
 
   if(msg == NULL){
@@ -143,10 +128,8 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
 }
 
 /**
- * 
  * Called by DBus when it wants to add a file descriptor to the event loop. DBus might also call this method when
  * it wants to update the event flag.
- * 
  */ 
 dbus_bool_t add_watch(DBusWatch *w, void *data){
     //get the JVM environment
@@ -182,9 +165,7 @@ dbus_bool_t add_watch(DBusWatch *w, void *data){
 }
 
 /**
- * 
  * Called when DBus closed a file descriptor and want to unregister it from the event loop
- * 
  */
 void remove_watch(DBusWatch *w, void *data){
   context* ctx = (context*) data;
@@ -193,12 +174,10 @@ void remove_watch(DBusWatch *w, void *data){
 }
 
 /**
- * 
  * Sometimes DBus wants to temporarily disable a file descriptor, there is two ways to handle this case, 
  * either call dbus_watch_get_enabled on every watch at every tick (not very efficient) or use the toggle
- * watch function to suspend the file descritpro. In our case we set the vent flag to 0 when the watch is
+ * watch function to suspend the file descriptor. In our case we set the event flag to 0 when the watch is
  * disabled
- * 
  */
 void toggle_watch(DBusWatch *w, void *data){
   short cond;

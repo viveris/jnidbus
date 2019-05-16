@@ -96,9 +96,6 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
 JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection_closeNative
   (JNIEnv * env, jobject target, jlong contextPtr){
      context* ctx = (context*) contextPtr;
-     //get class of the event
-      jclass connectionClass = find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/Connection");
-
       //get the dbus connection from pointer
       DBusConnection* conn = ctx->connection;
 

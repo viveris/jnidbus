@@ -35,7 +35,7 @@ jmethodID find_method(context* context, const char* class_name, const char* name
 }
 
 jfieldID find_field(context* context, const char* class_name, const char* name, const char* signature){
-    //generate method key
+    //generate field key
     std::string nameString = std::string()+class_name+"_"+name+"_"+signature;
 
     //try to get from cache
@@ -62,7 +62,7 @@ void close_context(context* ctx){
     JNIEnv* env;
     get_env(ctx,&env);
 
-    //unregister any cached class ref
+    //delete global ref of any cached class ref
 	std::map<std::string,jclass>::iterator it = ctx->class_cache.begin();
 	while (it != ctx->class_cache.end())
 	{

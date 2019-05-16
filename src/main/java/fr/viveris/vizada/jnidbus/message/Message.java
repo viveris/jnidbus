@@ -122,6 +122,7 @@ public abstract class Message implements Serializable {
             boolean isRecusiveList = genericType instanceof ParameterizedType;
             List<Object> list = new ArrayList<>();
             if(values != null){
+                String elementSignatureString = signature.getSignature().getFirst().getSignatureString();
                 for(Object o : values){
                     if(isRecusiveList){
                         list.add(Message.unserializeList((Object[]) o,signature.getSignature().getFirst(),((ParameterizedType)genericType).getActualTypeArguments()[0]));
@@ -129,7 +130,7 @@ public abstract class Message implements Serializable {
                         if(!(o instanceof DBusObject)) throw new IllegalStateException("The values are not unserializable objects");
                         Serializable obj = ((Class<? extends Serializable>)genericType).newInstance();
                         //generate DBusObject from raw data and signature element object
-                        obj.unserialize(new DBusObject(signature.getSignature().getFirst().getSignatureString(),((DBusObject)o).getValues()));
+                        obj.unserialize(new DBusObject(elementSignatureString,((DBusObject)o).getValues()));
                         list.add(obj);
                     }
                 }

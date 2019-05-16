@@ -17,7 +17,7 @@ DBusObjectPathVTable dbus_handler_struct = {
  * This method setup epoll, the wakeup FD and register watch functions to DBus. Watch functions are an interface
  * that allows the developer to build an event loop with any technology it wants (select, epoll, kqueue, etc...).
  * 
- * As we don't register any timeout functions, DBus will not be able to detect and manage timeout, this will be done
+ * As we don't register any timeout functions, DBus will not be able to detect and manage timeout, this should be done
  * on the JVM side (we might change this at some point but it is not worth the effort right now).
  * 
  * On the JVM side, any call made to the event loop while this function was not executed will block and wait. 
@@ -40,7 +40,7 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
     //create wakeup file descriptor
     ctx->wakeupFD = eventfd(0,EFD_NONBLOCK);
     if(ctx->wakeupFD == -1){
-      env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not create the epoll FD");
+      env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not create the wakeup FD");
     }
 
     //create epoll struct in which it will put the selected file descriptors
@@ -118,7 +118,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tic
         if (epollFlages & EPOLLERR) flags |= DBUS_WATCH_ERROR;
         
         if (!dbus_watch_handle(watch, flags)) {
-          env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"More memory is needed but non is available");
+          env->ThrowNew(find_class(ctx,"java/lang/IllegalStateException"),"More memory is needed but none is available");
         }
 
         //dispatch all the detected events
@@ -131,7 +131,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tic
  * 
  * Write arbitrary data in the wakeup file descriptor, which will unblock the current (or next) epoll_wait call
  * As we use an eventfd we don't need to care about whether data is already in the FD or not, an eventFD will add
- * the written values to the one stored in the FD. Fore more info, refer to the man page of "eventfd"
+ * the written values to the one already stored. Fore more info, refer to the man page of "eventfd"
  * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    wakeup
@@ -244,7 +244,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
 
 /**
  * 
- * Asynchronously call a DBus method. The function will use the given JVM PendingCall to DBus which will notify
+ * Asynchronously call a DBus method. The function will register the given JVM PendingCall to DBus which will notify
  * it when its state changes
  * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
@@ -297,7 +297,8 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
  * 
  * Register a new Dispatcher to DBus and add a match to receive signal for this object path.
  * Please note that with the current implementation, a dispatcher can be notified for signals that
- * do not have handlers on the JVM side, this might change in the future.
+ * do not have handlers on the JVM side, this might change in the future but it's not worth the
+ * effort right now.
  * 
  * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * Method:    addPathHandler
@@ -313,9 +314,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_add
   handler_data->ctx = ctx;
   handler_data->dispatcher = env->NewGlobalRef(dispatcher);
   dbus_connection_register_object_path(ctx->connection,pathNative,&dbus_handler_struct,handler_data);
-  std::string match = "type='signal',path='";
-  match += pathNative;
-  match += "'";
+  std::string match = std::string()+"type='signal',path='"+pathNative+"'";
   dbus_bus_add_match(ctx->connection,match.c_str(),NULL);
 
   env->ReleaseStringUTFChars(pathJVM,pathNative);

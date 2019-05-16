@@ -16,8 +16,8 @@
      * proper objects and must instead use stateless functions. In order to make our code statefull we have to passs around a context
      * which will contain everything our code needs to run (connection, file descriptors, JVM env and objects, etc...)
      * 
-     * The following structure represent this context and a pointer to it is stored in the DBus object. We must free this context when
-     * closing the conection. This context also allows us to store the JVM meta-class, which are not cached by default by the JVM.
+     * The following structure represent this context and a pointer to it is stored in the JVM DBus object. We must free this context when
+     * closing the conection. This context also allows us to store the JVM meta-data, which are not cached by default by the JVM.
      */
     struct context{
         //the JNIEnv variable passed to JNI functions is only available in the current thread and its pointer can move around
@@ -26,7 +26,7 @@
         JavaVM* vm;
         //DBus connection, used for anything DBus-related
         DBusConnection* connection;
-        //name of our bus, we need tos tore it as it is needed when closing
+        //name of our bus, we need to store it as it is needed when closing
         char* bus_name;
         //epoll file descriptor, for more information about epoll see the man page.
         int epollFD;
@@ -69,8 +69,7 @@
      * by default, when retreiving anything from the JVM, it will give us a Local reference, the JVM will try
      * to detect when a local reference is expired by itslef when the function returns. When working with asynchronous
      * callbacks we don't want the JVM to do this, and instead we will manage references by ourslef. To do this we use
-     * GlobalReferences, which tells the JVM to stop managing the reference to this object. When deleting the global
-     * reference, the JVM will regain its ability to detect local reference and collect it if not needed anymore. 
+     * GlobalReferences, which creates an unmanaged reference to the object.
      * 
      * This function is used to find meta-classes in the JVM and cache it for later use. When retreiving a class
      * for the first time, the function will call env->FindClass() and make a global reference for it, any call made
