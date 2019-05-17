@@ -2,6 +2,19 @@ package fr.viveris.vizada.jnidbus.message;
 
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
+/**
+ * Abstract class any signal class should extend. A signal is a representation of a DBus signal which can be instantiated
+ * and given to the DBus class to be sent. Its generic type is the signature of the signal and should be valid Message
+ * class.
+ *
+ * Any Signal class should be annotated with the DbusSignal annotation which provides all the information needed for dbus
+ * to send the signal
+ *
+ * All its methods can be overridden in order to replace the information provided by the annotation (for dynamic signals or
+ * testing purposes for example)
+ *
+ * @param <In> type of the signal data
+ */
 public abstract class Signal<In extends Message> {
     private DbusSignal annotation;
     private In params;

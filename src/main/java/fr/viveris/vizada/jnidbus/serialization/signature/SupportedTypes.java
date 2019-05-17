@@ -1,5 +1,8 @@
 package fr.viveris.vizada.jnidbus.serialization.signature;
 
+/**
+ * List of the types supported by the library, primitive or container
+ */
 public enum SupportedTypes {
     STRING('s'),
     INTEGER('i'),
@@ -16,6 +19,12 @@ public enum SupportedTypes {
         return this.value;
     }
 
+    /**
+     * Get the enum entry for the given char
+     *
+     * @param c char to match
+     * @return the enum entry for the given char
+     */
     public static SupportedTypes forChar(char c){
         switch(c){
             case 's': return STRING;

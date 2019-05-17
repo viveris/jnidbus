@@ -3,12 +3,21 @@ package fr.viveris.vizada.jnidbus.serialization.signature;
 import java.util.Iterator;
 
 /**
- * Signature iterator. This class does the actual parsing of the signature string and transform it in proper SignatureElement.
- * The inner workings are simple, we have a position integer that tells us where in the signature we are, and each call to next()
+ * This class does the actual parsing of the signature string and transform it in proper SignatureElement.
+ * The inner workings are simple, we have a position integer that tells us at which position we are, and each call to next()
  * will increment this position according to the type read (1 for primitive types, undetermined for container types).
+ *
+ * This iterator is immutable and the remove() method will throw if called
  */
 public class SignatureIterator  implements Iterator<SignatureElement> {
+    /**
+     * Dbus signature string
+     */
     private String signature;
+
+    /**
+     * Current position in the signature
+     */
     private int position = 0;
 
     public SignatureIterator(String signature) {
@@ -48,9 +57,15 @@ public class SignatureIterator  implements Iterator<SignatureElement> {
         this.position = 0;
     }
 
+    /**
+     * Generate an array signature containing the signature of its content. This method supports nested arrays
+     * (ex: aai)
+     *
+     * @return String of the array signature
+     */
     private String generateArraySignature(){
         StringBuilder builder = new StringBuilder();
-        //do...while in order to support recursive arrays (example signature: aaax)
+        //do...while in order to support nested arrays
         do{
             builder.append(this.signature.charAt(this.position));
         }while(this.signature.charAt(this.position++) == SupportedTypes.ARRAY.getValue());
@@ -66,6 +81,12 @@ public class SignatureIterator  implements Iterator<SignatureElement> {
         return builder.toString();
     }
 
+    /**
+     * Generate an object signature. This method supports nested object and will ignore the object delimiter signature
+     * ex: (si) will become si
+     *
+     * @return
+     */
     private String generateStructSignature(){
         StringBuilder builder = new StringBuilder();
         int depth = 1;

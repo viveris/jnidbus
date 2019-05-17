@@ -3,7 +3,7 @@ package fr.viveris.vizada.jnidbus.message;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 
 /**
- * Abstract class ny call should extend. A call is a representation of a DBus call which can be instanciated and given to
+ * Abstract class any call class should extend. A call is a representation of a DBus call which can be instantiated and given to
  * the DBus class to be sent over to dbus. Its generic types are the signature of the call and should be valid Messages
  * classes.
  *

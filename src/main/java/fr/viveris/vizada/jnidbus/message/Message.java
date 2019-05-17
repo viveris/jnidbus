@@ -9,6 +9,7 @@ import fr.viveris.vizada.jnidbus.serialization.cache.Cache;
 import fr.viveris.vizada.jnidbus.serialization.cache.CachedEntity;
 import fr.viveris.vizada.jnidbus.serialization.signature.Signature;
 import fr.viveris.vizada.jnidbus.serialization.signature.SignatureElement;
+import fr.viveris.vizada.jnidbus.serialization.signature.SupportedTypes;
 
 import java.lang.reflect.*;
 import java.util.*;
@@ -138,7 +139,6 @@ public abstract class Message implements Serializable {
             Object[] serialized = new Object[collection.size()];
             int i = 0;
             boolean isRecusiveList = genericType instanceof ParameterizedType;
-            if(!isRecusiveList && !Serializable.class.isAssignableFrom((Class)genericType)) throw new IllegalStateException("The List contains a non-serializable type");
             for(Object o : collection){
                 if(isRecusiveList){
                     //if the list contains other lists, recursively serialize it
@@ -169,7 +169,6 @@ public abstract class Message implements Serializable {
             else return Arrays.asList(values);
         }else{
             boolean isRecusiveList = genericType instanceof ParameterizedType;
-            if(!isRecusiveList && !Serializable.class.isAssignableFrom((Class)genericType)) throw new IllegalStateException("The List contains a non-serializable type");
             List<Object> list = new ArrayList<>();
             String elementSignatureString = signature.getSignature().getFirst().getSignatureString();
 
@@ -234,7 +233,7 @@ public abstract class Message implements Serializable {
             }
 
             //check the field against the annotation signature
-            Message.checkField(field,element);
+            Message.checkField(field,field.getGenericType(),element);
 
             try {
                 Method getter = clazz.getDeclaredMethod(getterName);
@@ -266,22 +265,42 @@ public abstract class Message implements Serializable {
      * @param element signature element used to check
      * @throws MessageCheckException
      */
-    private static void checkField(Field field, SignatureElement element) throws MessageCheckException{
-        if(element.isPrimitive()){
+    private static void checkField(Field field,Type fieldType, SignatureElement element) throws MessageCheckException{
+        //get primitive will catch primitive fields and primitive arrays
+        if(element.getPrimitive() != null){
+            boolean isList = fieldType instanceof ParameterizedType;
+            //check the generic is a List and if it matched the signature
+            if(isList && (!List.class.isAssignableFrom((Class)((ParameterizedType)fieldType).getRawType()) || element.getContainerType() != SupportedTypes.ARRAY))
+                throw new MessageCheckException("the field "+field.getName()+" is not of a List or the signature is not expecting a list");
+
             switch (element.getPrimitive()){
                 case STRING:
-                    if(!field.getType().equals(String.class)) throw new MessageCheckException("the field "+field.getName()+" is not of type String");
+                    //check if the generic type contains the correct type
+                    if(isList){
+                        if(!((ParameterizedType) fieldType).getActualTypeArguments()[0].equals(String.class)) throw new MessageCheckException("the field "+field.getName()+" is not of a List of String");
+                    }else{
+                        if(!fieldType.equals(String.class)) throw new MessageCheckException("the field "+field.getName()+" is not of type String");
+                    }
                     break;
                 case INTEGER:
-                    if(!field.getType().equals(String.class) && !field.getType().equals(Integer.TYPE)) throw new MessageCheckException("the field "+field.getName()+" is not of type int or Integer");
+                    //check if the generic type contains the correct type
+                    if(isList){
+                        ParameterizedType paramType = (ParameterizedType) fieldType;
+                        if(!paramType.getActualTypeArguments()[0].equals(Integer.class) && !paramType.getActualTypeArguments()[0].equals(Integer.TYPE))
+                            throw new MessageCheckException("the field "+field.getName()+" is not of a List of Integer");
+                    }else {
+                        if (!fieldType.equals(String.class) && !fieldType.equals(Integer.TYPE)) throw new MessageCheckException("the field " + field.getName() + " is not of type int or Integer");
+                    }
             }
         }else if(element.isArray()){
-
-            //TODO
+            //recursively check the content of the nested list
+            Message.checkField(field,((ParameterizedType)fieldType).getActualTypeArguments()[0],element.getSignature().getFirst());
 
         }else if(element.isObject()){
-            if(!Serializable.class.isAssignableFrom(field.getType())) throw new MessageCheckException("the field "+field.getName()+" does not contain a serializable type");
-            Message.testAndCache(field.getType().asSubclass(Serializable.class));
+            if(!Serializable.class.isAssignableFrom((Class)fieldType)) throw new MessageCheckException("the field "+field.getName()+" does not contain a serializable type");
+            CachedEntity testedEntity = Message.testAndCache(((Class)fieldType).asSubclass(Serializable.class));
+            if(!testedEntity.getSignature().equals(element.getSignatureString()))
+                throw new MessageCheckException("the field "+field.getName()+" signature do not match its type signature");
         }
     }
 
@@ -296,6 +315,7 @@ public abstract class Message implements Serializable {
         //try to retrieve from cache or create cache
         Cache cache = CACHE.get(clazz.getClassLoader());
         CachedEntity cachedEntity;
+        //if the cache is null, make the entity null, the cache will be created when the clazz is processed
         if(cache == null){
             cachedEntity = null;
         }else{
@@ -311,6 +331,9 @@ public abstract class Message implements Serializable {
         return cachedEntity;
     }
 
+    /**
+     * Special type of message that do not need serialization or unserialization.
+     */
     @DBusType(
             signature = "",
             fields = ""

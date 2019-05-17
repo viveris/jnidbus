@@ -1,8 +1,27 @@
 package fr.viveris.vizada.jnidbus.serialization.signature;
 
+/**
+ * Data class containing all the information about a signature element. An element can either be primitive (int, string,
+ * etc...) or be a container (array, object).
+ *
+ * If the container is an array, the getPrimitive() method might return a type if the array contains a primitive types,
+ * if the array contains an object, getPrimitive() will return null. If the element is a container, we can get the signature
+ * of its content by calling getSignature().
+ */
 public class SignatureElement {
+    /**
+     * Signature of the element. If the element is a container, its signature will container the signature of its content
+     */
     private String signature;
+
+    /**
+     * Container type, can be null
+     */
     private SupportedTypes containerType;
+
+    /**
+     * Primitive type, also contains type of primitive arrays
+     */
     private SupportedTypes primitiveType;
 
     public SignatureElement(String signature, SupportedTypes primitiveType, SupportedTypes containerType) {
