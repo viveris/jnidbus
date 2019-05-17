@@ -117,7 +117,7 @@ public class Dbus implements AutoCloseable {
      * @return PendingCall for the sent call
      */
     public <T extends Message> PendingCall<T> call(Call<?,T> call){
-        PendingCall<T> pending = new PendingCall<>(call.getReturnType());
+        PendingCall<T> pending = new PendingCall<>(call.getReturnType(),this.eventLoop);
         this.eventLoop.send(new CallSendingRequest(call.getParams(),call.getPath(),call.getInterfaceName(),call.getMember(),call.getDestination(),pending));
         return pending;
     }

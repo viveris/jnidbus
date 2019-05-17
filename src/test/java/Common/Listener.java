@@ -2,10 +2,11 @@ package Common;
 
 import fr.viveris.vizada.jnidbus.exception.DBusException;
 import fr.viveris.vizada.jnidbus.message.PendingCall;
+import fr.viveris.vizada.jnidbus.serialization.Serializable;
 
 import java.util.concurrent.CountDownLatch;
 
-public class Listener<T> implements PendingCall.Listener<T>{
+public class Listener<T extends Serializable> implements PendingCall.Listener<T>{
     private CountDownLatch barrier = new CountDownLatch(1);
     private DBusException t = null;
     private T value = null;

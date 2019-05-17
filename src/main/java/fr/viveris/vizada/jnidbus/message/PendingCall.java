@@ -1,5 +1,6 @@
 package fr.viveris.vizada.jnidbus.message;
 
+import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
 import fr.viveris.vizada.jnidbus.exception.DBusException;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
@@ -20,6 +21,11 @@ import fr.viveris.vizada.jnidbus.serialization.Serializable;
  */
 public class PendingCall<T extends Serializable> {
     /**
+     * Event loop on which we should dispatch execution
+     */
+    private EventLoop eventLoop;
+
+    /**
      * Return type of the call
      */
     private Class<T> clazz;
@@ -39,13 +45,19 @@ public class PendingCall<T extends Serializable> {
      */
     private DBusException error = null;
 
+    /**
+     * is the PendingCall cancelled
+     */
+    private volatile boolean isCancelled = false;
+
 
     /**
      * Create a new PendingCall returning an instance of the given class.
      *
      * @param clazz return type class
      */
-    public PendingCall(Class<T> clazz){
+    public PendingCall(Class<T> clazz, EventLoop eventLoop){
+        this.eventLoop = eventLoop;
         this.clazz = clazz;
     }
 
@@ -58,14 +70,27 @@ public class PendingCall<T extends Serializable> {
     public void setListener(Listener<T> listener){
         //only one listener is allowed
         if(this.listener != null) throw new IllegalStateException("A listener has already been bound to this PendingCall");
+        this.listener = listener;
+
+        //if the result is already here, ask for a redispatch
+        if(this.isResolved()){
+            this.eventLoop.redispatch(this);
+        }
+    }
+
+    /**
+     * Force a listener notification executed on the current thread.
+     */
+    public void forceNotification(){
+        //only one listener is allowed
+        if(this.listener == null) throw new IllegalStateException("No listener where found");
 
         //if the result is already here, notify instantly
-        if(this.result != null){
-            listener.notify(this.result);
+        if(this.result != null && !this.isCancelled){
+            this.listener.notify(this.result);
         } else if(this.error != null){
-            listener.error(this.error);
+            this.listener.error(this.error);
         }
-        this.listener = listener;
     }
 
     /**
@@ -105,6 +130,13 @@ public class PendingCall<T extends Serializable> {
         return error;
     }
 
+    public void cancel(){
+        if(!this.isResolved()){
+            this.isCancelled = true;
+            this.fail("fr.viveris.vizada.jnidbus.cancelled","the call was forcibly cancelled");
+        }
+    }
+
     /**
      * Returns whether a a result or error was received or not
      *
@@ -134,7 +166,7 @@ public class PendingCall<T extends Serializable> {
      *
      * @param <T> expected result type
      */
-    public interface Listener<T>{
+    public interface Listener<T extends Serializable>{
         void notify(T value);
         void error(DBusException t);
     }

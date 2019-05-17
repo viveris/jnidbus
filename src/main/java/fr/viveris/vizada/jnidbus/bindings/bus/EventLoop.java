@@ -69,6 +69,12 @@ public class EventLoop implements Closeable {
     private LinkedBlockingDeque<AbstractSendingRequest> signalSendingQueue = new LinkedBlockingDeque<>(SENDING_QUEUE_SIZE);
 
     /**
+     * Queue containing the PendingCall that received the result before the listener was set and that need to dispatch the
+     * listener notification on the event loop
+     */
+    private LinkedBlockingDeque<PendingCall> redispatchRequestQueue = new LinkedBlockingDeque<>();
+
+    /**
      * Java class representing the Dbus connection
      */
     private Connection connection;
@@ -217,6 +223,11 @@ public class EventLoop implements Closeable {
                 d.setAsRegistered();
             }
 
+            //execute redispatch requests
+            while (!this.redispatchRequestQueue.isEmpty()){
+                this.redispatchRequestQueue.poll().forceNotification();
+            }
+
             //limit the number of send request processed in order to avoid the ticking rate to slow down too much
             int i = 0;
             while(!this.signalSendingQueue.isEmpty() && i<SENDING_QUEUE_SIZE){
@@ -270,6 +281,12 @@ public class EventLoop implements Closeable {
     public void send(AbstractSendingRequest request){
         this.checkEventLoop();
         this.signalSendingQueue.add(request);
+        this.wakeupIfNeeded();
+    }
+
+    public void redispatch(PendingCall call){
+        this.checkEventLoop();
+        this.redispatchRequestQueue.add(call);
         this.wakeupIfNeeded();
     }
 

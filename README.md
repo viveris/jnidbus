@@ -284,7 +284,6 @@ If an unexpected exception happens in a handler, a `DBusException` will be autom
 ## Planned features
 
 - Asynchronous handler return type in the same fashion as the `PendingCall`
-- For now, when binding a Listener to a `PendingCall` that already received a result, the listener will be called on the same thread as the `setListener` call, dispatch it in the event loop instead.
 - Provide a way to know when the event loop is ready to send more messages
 - Integrate Log4J for a easier debugging
 - Extension functions for Kotlin and support for coroutines
