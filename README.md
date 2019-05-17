@@ -23,14 +23,14 @@ In order to make an object serializable for JNIDBus, it must extends the `Messag
 
 ```java
 @DBusType(
-    	/* please refer to the DBus documentation for more information
-    	 * about signature format
-    	 */
-        signature = "s",
-    	/* fields mapped to the signature, if your signature contains multiple elements
-    	 * the fields will be mapped from left to right to the first element found
-    	 */
-        fields = "string"
+    /* please refer to the DBus documentation for more information
+     * about signature format
+     */
+    signature = "s",
+    /* fields mapped to the signature, if your signature contains multiple elements
+     * the fields will be mapped from left to right to the first element found
+     */
+    fields = "string"
 )
 public class StringMessage extends Message {
     /* fields exposed to JNIDBus must have setters and getters respecting the classic
@@ -57,13 +57,13 @@ In the example below if you change the signature of `SubObject` you will have to
 
 ```java
 @DBusType(
-    	/* The following signature means we have a root object containing an integer
-    	 * and another object. The child object contain a single string. Please note that
-    	 * you have to specify the child object signature in the parent object and in the
-    	 * child object
-    	 */
-        signature = "i(s)",
-        fields = {"integer","object"}
+    /* The following signature means we have a root object containing an integer
+     * and another object. The child object contain a single string. Please note that
+     * you have to specify the child object signature in the parent object and in the
+     * child object
+     */
+    signature = "i(s)",
+    fields = {"integer","object"}
 )
 public class NestedObject extends Message {
     private int integer;
@@ -97,9 +97,9 @@ DBus array type is mapped to the `List` collection. A List can contain anything 
 
 ```java
 @DBusType(
-    	/* This signature correspond to an array containing other arrays of integers */
-        signature = "aai",
-        fields = "array"
+    /* This signature correspond to an array containing other arrays of integers */
+    signature = "aai",
+    fields = "array"
 )
 public class CollectionOfCollectionArray extends Message {
     private List<List<Integer>> array;
