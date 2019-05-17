@@ -3,7 +3,6 @@ package Call;
 import Common.DBusTestCase;
 import Common.Listener;
 import Common.DBusObjects.StringMessage;
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -25,7 +24,7 @@ public class FailedCallTest extends DBusTestCase {
     @Test
     public void callOnNonExistentMethod() throws InterruptedException {
         CallHandler handler = new CallHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         PendingCall<Message.EmptyMessage> pending = this.sender.call(new UnknownCall(this.receiverBusName));
         Listener<Message.EmptyMessage> l = new Listener<>();
         pending.setListener(l);
@@ -39,7 +38,7 @@ public class FailedCallTest extends DBusTestCase {
     @Test
     public void callReturnsWrongSignature() throws InterruptedException {
         CallHandler handler = new CallHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         PendingCall<StringMessage> pending = this.sender.call(new MismatchCall(this.receiverBusName));
         Listener<StringMessage> l = new Listener<>();
         pending.setListener(l);
@@ -53,7 +52,7 @@ public class FailedCallTest extends DBusTestCase {
     @Test
     public void callReturnsError() throws InterruptedException {
         CallHandler handler = new CallHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         PendingCall<Message.EmptyMessage> pending = this.sender.call(new FailCall(this.receiverBusName));
         Listener<Message.EmptyMessage> l = new Listener<>();
         pending.setListener(l);

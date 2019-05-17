@@ -3,7 +3,6 @@ package Serialization;
 import Common.DBusTestCase;
 import Common.DBusObjects.ArrayRecursiveObject;
 import Common.DBusObjects.RecursiveObject;
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -24,7 +23,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
     @Test
     public void nestedObjectTest() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         RecursiveObject typeObject = new RecursiveObject();
 
         //test Java serialization
@@ -50,7 +49,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
     @Test
     public void recursiveNestedObject() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         ArrayRecursiveObject typeObject = new ArrayRecursiveObject();
 
         //test Java serialization

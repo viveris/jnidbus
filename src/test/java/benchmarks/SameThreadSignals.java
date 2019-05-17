@@ -6,7 +6,6 @@ import Common.DBusTestCase;
 import fr.viveris.vizada.jnidbus.BusType;
 import fr.viveris.vizada.jnidbus.Dbus;
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -35,7 +34,7 @@ public class SameThreadSignals {
         try {
             this.sender = new Dbus(BusType.SESSION,this.busName);
             this.handler = new SignalHandler();
-            sender.addMessageHandler(this.handler);
+            sender.addHandler(this.handler);
         } catch (ConnectionException e) {
             e.printStackTrace();
         }

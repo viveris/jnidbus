@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
  * When all of this is done and that a match is found, it will try unserialize the message and call the method. If the method is a DBus method call
  * it will also wait for the return value and send it to the event loop to return to the caller.
  *
- * As dispatcher registration is asynchronous, there is a synchronization mechanism that the DBus class will use to make the call to addMessageHandler
+ * As dispatcher registration is asynchronous, there is a synchronization mechanism that the DBus class will use to make the call to addHandler
  * block until the dispatcher is effectively registered.
  */
 public class Dispatcher {

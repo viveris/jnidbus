@@ -3,7 +3,6 @@ package Call;
 import Common.DBusTestCase;
 import Common.Listener;
 import Common.DBusObjects.StringMessage;
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -21,7 +20,7 @@ public class BasicCallTest extends DBusTestCase {
     @Test
     public void emptyCall() throws InterruptedException {
         CallHandler handler = new CallHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         PendingCall<Message.EmptyMessage> pending = this.sender.call(new EmptyCall(this.receiverBusName));
         Listener<Message.EmptyMessage> l = new Listener<>();
         pending.setListener(l);
@@ -34,7 +33,7 @@ public class BasicCallTest extends DBusTestCase {
     @Test
     public void callIsSerializedAndUnserialized() throws InterruptedException {
         CallHandler handler = new CallHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         StringMessage msg = new StringMessage();
         msg.setString("test");
         PendingCall<StringMessage> pending = this.sender.call(new StringCall(this.receiverBusName,msg));

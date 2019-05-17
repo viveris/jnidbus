@@ -2,7 +2,6 @@ package Signal;
 
 import Common.DBusTestCase;
 import Common.DBusObjects.StringMessage;
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -24,7 +23,7 @@ public class BasicSignalTest extends DBusTestCase {
     @Test
     public void emptySignal() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         this.sender.sendSignal(new EmptySignal());
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
     }
@@ -32,7 +31,7 @@ public class BasicSignalTest extends DBusTestCase {
     @Test
     public void signalWithWrongSignatureIsNotDispatched() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         StringMessage msg = new StringMessage();
         msg.setString(testString);
         this.sender.sendSignal(new StringSignalOnWrongEndpoint(msg));
@@ -42,7 +41,7 @@ public class BasicSignalTest extends DBusTestCase {
     @Test
     public void signalIsSerializedAndUnserialized() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         StringMessage msg = new StringMessage();
         msg.setString(testString);
         this.sender.sendSignal(new StringSignal(msg));

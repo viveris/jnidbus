@@ -3,7 +3,6 @@ package Serialization;
 import Common.DBusTestCase;
 import Common.DBusObjects.CollectionArray;
 import Common.DBusObjects.CollectionOfCollectionArray;
-import fr.viveris.vizada.jnidbus.dispatching.Criteria;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -24,7 +23,7 @@ public class ArraySerializationTest extends DBusTestCase {
     @Test
     public void collectionOfPrimitiveSerializationAndUnserialization() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         CollectionArray typeObject = new CollectionArray();
 
         //test empty collection is correctly serialized
@@ -62,7 +61,7 @@ public class ArraySerializationTest extends DBusTestCase {
     @Test
     public void recursiveCollectionOfPrimitiveSerializationAndUnserialization() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
-        this.receiver.addMessageHandler(handler);
+        this.receiver.addHandler(handler);
         CollectionOfCollectionArray typeObject = new CollectionOfCollectionArray();
 
         //test empty collection is correctly serialized

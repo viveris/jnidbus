@@ -64,7 +64,7 @@ public class Dbus implements AutoCloseable {
      *
      * @param handler handler to register
      */
-    public void addMessageHandler(GenericHandler handler){
+    public void addHandler(GenericHandler handler){
         //get annotation
         Handler handlerAnnotation = handler.getClass().getAnnotation(Handler.class);
         if(handlerAnnotation == null) throw new IllegalStateException("The given handler does not have the Handler annotation");
