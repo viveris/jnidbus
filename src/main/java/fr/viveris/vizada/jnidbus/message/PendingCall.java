@@ -67,7 +67,7 @@ public class PendingCall<T extends Serializable> {
      *
      * @param listener listener to bind
      */
-    public void setListener(Listener<T> listener){
+    synchronized public void setListener(Listener<T> listener){
         //only one listener is allowed
         if(this.listener != null) throw new IllegalStateException("A listener has already been bound to this PendingCall");
         this.listener = listener;
@@ -81,7 +81,7 @@ public class PendingCall<T extends Serializable> {
     /**
      * Force a listener notification executed on the current thread.
      */
-    public void forceNotification(){
+    synchronized public void forceNotification(){
         //only one listener is allowed
         if(this.listener == null) throw new IllegalStateException("No listener where found");
 
@@ -98,7 +98,7 @@ public class PendingCall<T extends Serializable> {
      *
      * @param response pre-unserialized object
      */
-    public void notify(DBusObject response){
+    synchronized public void notify(DBusObject response){
         try {
             T value;
             //if the message is an EmptyMessage, don't unserialize and use the static instance
@@ -130,7 +130,7 @@ public class PendingCall<T extends Serializable> {
         return error;
     }
 
-    public void cancel(){
+    synchronized public void cancel(){
         if(!this.isResolved()){
             this.isCancelled = true;
             this.fail("fr.viveris.vizada.jnidbus.cancelled","the call was forcibly cancelled");
@@ -142,7 +142,7 @@ public class PendingCall<T extends Serializable> {
      *
      * @return
      */
-    public boolean isResolved(){
+    synchronized public boolean isResolved(){
         return this.error != null || this.result != null;
     }
 
@@ -152,7 +152,7 @@ public class PendingCall<T extends Serializable> {
      * @param errorName DBus error name
      * @param message error message
      */
-    public void fail(String errorName, String message){
+    synchronized public void fail(String errorName, String message){
         DBusException exc = new DBusException(errorName,message);
         this.error = exc;
         if(this.listener != null && this.result == null){
