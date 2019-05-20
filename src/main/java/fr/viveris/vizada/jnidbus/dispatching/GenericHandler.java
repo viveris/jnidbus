@@ -1,9 +1,11 @@
 package fr.viveris.vizada.jnidbus.dispatching;
 
+import fr.viveris.vizada.jnidbus.message.Promise;
 import fr.viveris.vizada.jnidbus.serialization.DBusType;
 import fr.viveris.vizada.jnidbus.serialization.Serializable;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.util.HashMap;
 
 /**
@@ -32,8 +34,14 @@ public abstract class GenericHandler {
             Class<?> returnType = m.getReturnType();
             if(params.length != 1) throw new IllegalArgumentException("Incorrect number of parameter on an handler method, there should be only one input parameter");
 
+            //if the return type is a promise, check its generic type
+            if(Promise.class.isAssignableFrom(returnType)){
+                returnType = (Class) ((ParameterizedType)m.getGenericReturnType()).getActualTypeArguments()[0];
+            }
+
             DBusType paramAnnotation = params[0].getAnnotation(DBusType.class);
             DBusType returnAnnotation = returnType.getAnnotation(DBusType.class);
+
             String ouputSignature = "";
 
             if(paramAnnotation == null || !Serializable.class.isAssignableFrom(params[0])){
@@ -46,8 +54,14 @@ public abstract class GenericHandler {
                 ouputSignature = returnAnnotation.signature();
             }
 
+            HandlerMethod hm;
+            if(Void.TYPE.equals(returnType)){
+                hm = new HandlerMethod(this,m,null);
+            }else{
+                hm = new HandlerMethod(this,m,returnType.asSubclass(Serializable.class));
+            }
             //the types are valid, put it in the map. This line will throw if the serializable types are in fact invalid
-            returned.put(new Criteria(annotation.member(),paramAnnotation.signature(),ouputSignature,annotation.type()),new HandlerMethod(this,m));
+            returned.put(new Criteria(annotation.member(),paramAnnotation.signature(),ouputSignature,annotation.type()),hm);
 
         }
         return returned;

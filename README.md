@@ -166,6 +166,40 @@ SomeHandler handler = new SomeHandler();
 this.receiver.addHandler(handler);
 ```
 
+### Asynchronous handler
+
+As we have seen above, you must avoid blocking task on the event loop, but how to do long running task then? JNIDBus support asynchronous computation using its own `Promise` class. A handler method can return a `Promise` that will be resolved by another thread at a later time when the computation is done
+
+*<u>example of an asynchronous Call handler:</u>*
+
+```java
+@Handler(
+    ...
+)
+public class CallHandler extends GenericHandler {
+    @HandlerMethod(
+        member = "blockingCall",
+        type = HandlerType.METHOD
+    )
+    
+    public Promise<Message.EmptyMessage> blockingCall(Message.EmptyMessage emptyMessage){
+        final Promise<Message.EmptyMessage> promise = new Promise<>();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //a very long computation
+                ...
+                //we are done, resolve the promise
+                promise.resolve(Message.EMPTY);
+            }
+        }).start();
+        return promise;
+    }
+}
+```
+
+
+
 ### Send a Signal
 
 Signals are classes extending the `Signal` class and annotated with the `DbusSignal` annotation. The `Signal` class is generic and its generic type correspond to the `Message` you want to send.

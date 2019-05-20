@@ -2,6 +2,7 @@ package fr.viveris.vizada.jnidbus.dispatching;
 
 import fr.viveris.vizada.jnidbus.bindings.bus.EventLoop;
 import fr.viveris.vizada.jnidbus.message.Message;
+import fr.viveris.vizada.jnidbus.message.Promise;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.ErrorReplySendingRequest;
 import fr.viveris.vizada.jnidbus.message.sendingrequest.ReplySendingRequest;
 import fr.viveris.vizada.jnidbus.serialization.DBusObject;
@@ -130,9 +131,15 @@ public class Dispatcher {
                         param.unserialize(args);
                     }
                     //get the return value of the handler, and if not null send a reply
-                    Message returnObject = (Message) handler.call(param);
+                    Object returnObject = handler.call(param);
                     if(returnObject != null && msgPointer != 0){
-                        this.eventLoop.send(new ReplySendingRequest(returnObject.serialize(),msgPointer));
+                        if(returnObject instanceof Message){
+                            this.eventLoop.send(new ReplySendingRequest(((Message)returnObject).serialize(),msgPointer));
+                        }else if(returnObject instanceof Promise){
+                            ((Promise) returnObject).setMessagePointer(msgPointer,this.eventLoop);
+                        }else{
+                            //TODO: log error, invalid return type
+                        }
                     }else if(msgPointer != 0){
                         //TODO: log an error as the reply from the call was null, an error should have been thrown instead
                     }
