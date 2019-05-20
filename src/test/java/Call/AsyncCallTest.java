@@ -3,11 +3,11 @@ package Call;
 import Common.DBusObjects.SingleStringMessage;
 import Common.DBusTestCase;
 import Common.Listener;
-import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
-import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
-import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
-import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
-import fr.viveris.vizada.jnidbus.message.*;
+import fr.viveris.jnidbus.dispatching.GenericHandler;
+import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.annotation.Handler;
+import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
+import fr.viveris.jnidbus.message.*;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;

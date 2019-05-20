@@ -8,7 +8,7 @@ void serialize(context* ctx, jobject serialized, DBusMessageIter* container){
     get_env(ctx,&env);
     
     //get signature and values from the JVM object
-    const char* dbus_object_class_name = "fr/viveris/vizada/jnidbus/serialization/DBusObject";
+    const char* dbus_object_class_name = "fr/viveris/jnidbus/serialization/DBusObject";
     jclass dbusObjectClass = find_class(ctx,dbus_object_class_name);
     jstring dbusTypesJVM = (jstring) env->GetObjectField(serialized, find_field(ctx,dbus_object_class_name,"signature", "Ljava/lang/String;"));
     jobjectArray dbusValues = (jobjectArray) env->GetObjectField(serialized, find_field(ctx,dbus_object_class_name,"values", "[Ljava/lang/Object;"));
@@ -85,7 +85,7 @@ jobject unserialize(context* ctx, DBusMessageIter* container){
     //as DBus can not tell us the size of the message we have to use a vector to temporarily store the unserialized objects
     vector<jobject> values;
 
-    const char* dbus_object_class_name = "fr/viveris/vizada/jnidbus/serialization/DBusObject";
+    const char* dbus_object_class_name = "fr/viveris/jnidbus/serialization/DBusObject";
     jclass dbusObjectClass = find_class(ctx,dbus_object_class_name);
 
 

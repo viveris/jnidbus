@@ -9,7 +9,7 @@ cd ./src/main
 rm -rf ./h
 echo "* generating headers for all classes"
 
-for entry in $(find ./java/fr/viveris/vizada/jnidbus/bindings -maxdepth 10 -type f)
+for entry in $(find ./java/fr/viveris/jnidbus/bindings -maxdepth 10 -type f)
 do
     ##trim ".java"
     FILE="${entry%.java}"

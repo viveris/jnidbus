@@ -1,8 +1,8 @@
 package Serialization;
 
-import fr.viveris.vizada.jnidbus.serialization.signature.Signature;
-import fr.viveris.vizada.jnidbus.serialization.signature.SignatureElement;
-import fr.viveris.vizada.jnidbus.serialization.signature.SupportedTypes;
+import fr.viveris.jnidbus.serialization.signature.Signature;
+import fr.viveris.jnidbus.serialization.signature.SignatureElement;
+import fr.viveris.jnidbus.serialization.signature.SupportedTypes;
 import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;

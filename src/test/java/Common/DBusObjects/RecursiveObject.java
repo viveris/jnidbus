@@ -1,7 +1,7 @@
 package Common.DBusObjects;
 
-import fr.viveris.vizada.jnidbus.message.Message;
-import fr.viveris.vizada.jnidbus.serialization.DBusType;
+import fr.viveris.jnidbus.message.Message;
+import fr.viveris.jnidbus.serialization.DBusType;
 
 @DBusType(
         signature = "i(s)s",

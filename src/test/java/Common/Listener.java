@@ -1,8 +1,8 @@
 package Common;
 
-import fr.viveris.vizada.jnidbus.exception.DBusException;
-import fr.viveris.vizada.jnidbus.message.PendingCall;
-import fr.viveris.vizada.jnidbus.serialization.Serializable;
+import fr.viveris.jnidbus.exception.DBusException;
+import fr.viveris.jnidbus.message.PendingCall;
+import fr.viveris.jnidbus.serialization.Serializable;
 
 import java.util.concurrent.CountDownLatch;
 

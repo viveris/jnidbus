@@ -17,7 +17,7 @@ JNIdbus uses annotations and reflection to serialize POJO into DBus messages. Th
 
 ### The basics
 
-In order to make an object serializable for JNIDBus, it must extends the `Message` class and have the `DBusType` annotation. The library will try to cache the POJO reflection information and check that it respect the signature given in the `signature` property of the signature so the developer can quickly detect errors in the object mappings.
+In order to make an object serializable for JNIDBus, it must extends the `Message` class and have the `DBusType` annotation. The library will try to cache the POJO reflection information and check that it respect the signature given in the `signature` property of the annotation so the developer can quickly detect errors in the object mappings.
 
 *<u>example for a basic string message:</u>*
 
@@ -334,7 +334,7 @@ I was able to get around 35k complex signals (nested lists and objects) sent and
 
 ##### I found a bug
 
-Fell free to post an issue describing precisely what behavior you got and whet result you expected. If you can provide a small reproducer we will be able to get rid of this bug even faster.
+Feel free to post an issue describing precisely what behavior you got and whet result you expected. If you can provide a small reproducer we will be able to get rid of this bug even faster.
 
 ##### How to contribute
 

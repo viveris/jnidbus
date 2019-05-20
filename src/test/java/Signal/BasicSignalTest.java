@@ -2,13 +2,13 @@ package Signal;
 
 import Common.DBusTestCase;
 import Common.DBusObjects.SingleStringMessage;
-import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
-import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
-import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
-import fr.viveris.vizada.jnidbus.dispatching.annotation.HandlerMethod;
-import fr.viveris.vizada.jnidbus.message.DbusSignal;
-import fr.viveris.vizada.jnidbus.message.Message;
-import fr.viveris.vizada.jnidbus.message.Signal;
+import fr.viveris.jnidbus.dispatching.GenericHandler;
+import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.annotation.Handler;
+import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
+import fr.viveris.jnidbus.message.DbusSignal;
+import fr.viveris.jnidbus.message.Message;
+import fr.viveris.jnidbus.message.Signal;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;

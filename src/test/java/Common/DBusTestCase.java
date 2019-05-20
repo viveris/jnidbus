@@ -1,12 +1,11 @@
 package Common;
 
-import fr.viveris.vizada.jnidbus.BusType;
-import fr.viveris.vizada.jnidbus.Dbus;
-import fr.viveris.vizada.jnidbus.exception.ConnectionException;
+import fr.viveris.jnidbus.BusType;
+import fr.viveris.jnidbus.Dbus;
+import fr.viveris.jnidbus.exception.ConnectionException;
 import org.junit.After;
 import org.junit.Before;
 
-import java.security.SecureRandom;
 import java.util.Random;
 
 public abstract class DBusTestCase {

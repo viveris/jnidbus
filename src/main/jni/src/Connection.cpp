@@ -1,4 +1,4 @@
-#include "./headers/fr_viveris_vizada_jnidbus_bindings_bus_Connection.h"
+#include "./headers/fr_viveris_jnidbus_bindings_bus_Connection.h"
 #include "./headers/context.h"
 #include <iostream>
 #include <string>
@@ -13,18 +13,18 @@ using namespace std;
  * DBus connection instead of sharing only one, if the developer wants only one open connection, it should ensure it
  * himself. The method will throw a ConnectionException and return null if something goes wrong.
  *
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
+ * Class:     fr_viveris_jnidbus_bindings_bus_Connection
  * Method:    createConnection
- * Signature: (Lfr/viveris/vizada/jnidbus/BusType;)Lfr/viveris/vizada/jnidbus/bindings/bus/Connection;
+ * Signature: (Lfr/viveris/jnidbus/BusType;)Lfr/viveris/jnidbus/bindings/bus/Connection;
  */
-JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection_createConnection
+JNIEXPORT jobject JNICALL Java_fr_viveris_jnidbus_bindings_bus_Connection_createConnection
   (JNIEnv * env, jclass target, jobject busType, jstring busName){
       //init context
       context* ctx = new context;
       env->GetJavaVM(&ctx->vm);
 
       //get the bus type needed
-      jmethodID getBusTypeMethod = env->GetMethodID(find_class(ctx,"fr/viveris/vizada/jnidbus/BusType"), "name", "()Ljava/lang/String;");
+      jmethodID getBusTypeMethod = env->GetMethodID(find_class(ctx,"fr/viveris/jnidbus/BusType"), "name", "()Ljava/lang/String;");
       jstring rawValue = (jstring) env->CallObjectMethod(busType, getBusTypeMethod);
       const char* value = env->GetStringUTFChars(rawValue, 0);
       
@@ -37,7 +37,7 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
       }else if(strcmp(value,"STARTER") == 0){
          type = DBUS_BUS_STARTER;
       }else{
-         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),"Unknown bus type");
+         env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/ConnectionException"),"Unknown bus type");
          return NULL;
       }
 
@@ -48,7 +48,7 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
       DBusConnection* conn;
       conn = dbus_bus_get_private(type, &err);
       if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),err.message);
+         env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err); 
          return NULL;
       }
@@ -61,13 +61,13 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
 
       int ret = dbus_bus_request_name(conn, busNameConverted, DBUS_NAME_FLAG_REPLACE_EXISTING , &err);
       if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),err.message);
+         env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err);
          return NULL;
       }
 
       if (DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER != ret) { 
-         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),"Could not apply bus name");
+         env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/ConnectionException"),"Could not apply bus name");
          return NULL;
       }
 
@@ -80,7 +80,7 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
       env->ReleaseStringUTFChars(busName, busNameConverted);
 
       //construct JVM object and pass the connection pointer to it
-      jclass cls = find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/Connection");
+      jclass cls = find_class(ctx, "fr/viveris/jnidbus/bindings/bus/Connection");
       jmethodID constructor = env->GetMethodID(cls, "<init>", "(JLjava/lang/String;)V");
       jobject obj = env->NewObject(cls, constructor,(uintptr_t) ctx,busName);
       return obj;
@@ -89,11 +89,11 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection
 /*
  * Close the DBus connection and free any resource used
  *
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
+ * Class:     fr_viveris_jnidbus_bindings_bus_Connection
  * Method:    closeNative
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection_closeNative
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_Connection_closeNative
   (JNIEnv * env, jobject target, jlong contextPtr){
      context* ctx = (context*) contextPtr;
       //get the dbus connection from pointer
@@ -105,7 +105,7 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_Connection_cl
       dbus_bus_release_name(conn,ctx->bus_name,&err);
 
       if (dbus_error_is_set(&err)) { 
-         env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/ConnectionException"),err.message);
+         env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err); 
          return;
       }

@@ -1,4 +1,4 @@
-#include "./headers/fr_viveris_vizada_jnidbus_bindings_bus_EventLoop.h"
+#include "./headers/fr_viveris_jnidbus_bindings_bus_EventLoop.h"
 #include "./headers/event_loop_handlers.h"
 
 #include <iostream>
@@ -22,11 +22,11 @@ DBusObjectPathVTable dbus_handler_struct = {
  * 
  * On the JVM side, any call made to the event loop while this function was not executed will block and wait. 
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    setup
  * Signature: ()Z
  */
-JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_setup
+JNIEXPORT jboolean JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_setup
   (JNIEnv * env, jobject target, jlong ctxPtr){
     //get contxet
     context* ctx = (context*) ctxPtr;
@@ -34,13 +34,13 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
     //create epoll instance
     ctx->epollFD = epoll_create1(0);
     if(ctx->epollFD == -1){
-      env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not create the epoll FD");
+      env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/EventLoopSetupException"),"Could not create the epoll FD");
     }
 
     //create wakeup file descriptor
     ctx->wakeupFD = eventfd(0,EFD_NONBLOCK);
     if(ctx->wakeupFD == -1){
-      env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not create the wakeup FD");
+      env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/EventLoopSetupException"),"Could not create the wakeup FD");
     }
 
     //create epoll struct in which it will put the selected file descriptors
@@ -52,18 +52,18 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
     wakeupStruct.events = EPOLLIN;
     int error = epoll_ctl(ctx->epollFD,EPOLL_CTL_ADD,ctx->wakeupFD,&wakeupStruct);
     if(error == -1){
-        env->ThrowNew(find_class(ctx,"fr/viveris/vizada/jnidbus/exception/EventLoopSetupException"),"Could not register the wakeup FD to epoll");
+        env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/EventLoopSetupException"),"Could not register the wakeup FD to epoll");
     }
 
     //put event loop in context
     ctx->eventLoop = env->NewGlobalRef(target);
 
     //put lock object in context
-    jobject wakekup_lock = env->GetObjectField(ctx->eventLoop,env->GetFieldID(find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/EventLoop"),"wakeupLock","Ljava/lang/Object;"));
+    jobject wakekup_lock = env->GetObjectField(ctx->eventLoop,env->GetFieldID(find_class(ctx, "fr/viveris/jnidbus/bindings/bus/EventLoop"),"wakeupLock","Ljava/lang/Object;"));
     ctx->wakeup_lock = env->NewGlobalRef(wakekup_lock);
 
     //set field ID of the should wakeup flag
-    ctx->should_wakeup_flag = env->GetFieldID(find_class(ctx, "fr/viveris/vizada/jnidbus/bindings/bus/EventLoop"),"shouldWakeup","Z");
+    ctx->should_wakeup_flag = env->GetFieldID(find_class(ctx, "fr/viveris/jnidbus/bindings/bus/EventLoop"),"shouldWakeup","Z");
 
     //add watch handlers
     dbus_connection_set_watch_functions(ctx->connection,add_watch,remove_watch,toggle_watch,ctx,NULL);
@@ -80,11 +80,11 @@ JNIEXPORT jboolean JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
  * get the DBus watch pointer corresponding and notify DBus a watch state has changed, which will
  * make DBus check for data and dispatch parsed message to the correct object path handler.
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    tick
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tick
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_tick
   (JNIEnv * env, jobject target,jlong ctxPtr, jint timeout){
     //get context
     context* ctx = (context*) ctxPtr;
@@ -133,11 +133,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_tic
  * As we use an eventfd we don't need to care about whether data is already in the FD or not, an eventFD will add
  * the written values to the one already stored. Fore more info, refer to the man page of "eventfd"
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    wakeup
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_wakeup
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_wakeup
   (JNIEnv * env, jobject target, jlong ctxPtr){
     context* ctx = (context*) ctxPtr;
     uint64_t u = 1;
@@ -148,11 +148,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_wak
  * 
  * Send the result of a call back to the caller
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    sendReply
- * Signature: (JLfr/viveris/vizada/jnidbus/message/Message;J)V
+ * Signature: (JLfr/viveris/jnidbus/message/Message;J)V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendReply
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_sendReply
   (JNIEnv * env, jobject target, jlong ctxPtr, jobject messageJVM, jlong msgPointer){
     context* ctx = (context*) ctxPtr;
     DBusConnection* conn = ctx->connection;
@@ -178,11 +178,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
 /**
  * Send an error to the caller, the error name and message are generated from the thrown exception in the java code
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    sendReplyError
  * Signature: (JJLjava/lang/String;Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendReplyError
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_sendReplyError
   (JNIEnv * env, jobject target, jlong ctxPtr, jlong msgPointer, jstring errorCodeJVM, jstring errorMessageJVM){
     context* ctx = (context*) ctxPtr;
     DBusConnection* conn = ctx->connection;
@@ -207,11 +207,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
  *
  * Send a Signal on the Bus
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    sendSignal
- * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/vizada/jnidbus/message/Message;)V
+ * Signature: (JLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lfr/viveris/jnidbus/message/Message;)V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendSignal
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_sendSignal
   (JNIEnv * env, jobject target, jlong ctxPtr, jstring pathJVM, jstring interfaceJVM, jstring memberJVM, jobject messageJVM){
 
     context* ctx = (context*) ctxPtr;
@@ -247,11 +247,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
  * Asynchronously call a DBus method. The function will register the given JVM PendingCall to DBus which will notify
  * it when its state changes
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_Connection
+ * Class:     fr_viveris_jnidbus_bindings_bus_Connection
  * Method:    sendEvent
- * Signature: (Lfr/viveris/vizada/jnidbus/bindings/message/Event;)Z
+ * Signature: (Lfr/viveris/jnidbus/bindings/message/Event;)Z
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sendCall
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_sendCall
   (JNIEnv * env, jobject target, jlong ctxPtr, jstring pathJVM, jstring interfaceJVM, jstring memberJVM, jobject messageJVM, jstring destJVM, jobject pendingCall){
     context* ctx = (context*) ctxPtr;
 
@@ -300,11 +300,11 @@ JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_sen
  * do not have handlers on the JVM side, this might change in the future but it's not worth the
  * effort right now.
  * 
- * Class:     fr_viveris_vizada_jnidbus_bindings_bus_EventLoop
+ * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    addPathHandler
- * Signature: (JLjava/lang/String;Lfr/viveris/vizada/jnidbus/dispatching/Dispatcher;)V
+ * Signature: (JLjava/lang/String;Lfr/viveris/jnidbus/dispatching/Dispatcher;)V
  */
-JNIEXPORT void JNICALL Java_fr_viveris_vizada_jnidbus_bindings_bus_EventLoop_addPathHandler
+JNIEXPORT void JNICALL Java_fr_viveris_jnidbus_bindings_bus_EventLoop_addPathHandler
   (JNIEnv * env, jobject target, jlong ctxPtr, jstring pathJVM, jobject dispatcher){
   context* ctx = (context*) ctxPtr;
 

@@ -16,7 +16,7 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
   //set the object signature
   env->SetObjectField(
       jvmObject,
-      find_field(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"),
+      find_field(ctx,"fr/viveris/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"),
       env->NewStringUTF(dbus_message_get_signature(msg)));
 
   //message metadata
@@ -34,9 +34,9 @@ DBusHandlerResult handle_dispatch(DBusConnection* connection, DBusMessage* msg, 
     handlerCtx->dispatcher,
     find_method(
       ctx,
-      "fr/viveris/vizada/jnidbus/dispatching/Dispatcher", 
+      "fr/viveris/jnidbus/dispatching/Dispatcher", 
       "dispatch", 
-      "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;Ljava/lang/String;Ljava/lang/String;J)Z"
+      "(Lfr/viveris/jnidbus/serialization/DBusObject;Ljava/lang/String;Ljava/lang/String;J)Z"
     ),
     jvmObject,
     env->NewStringUTF(interface),
@@ -90,7 +90,7 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
       pCtx->pending_call,
       find_method(
         ctx,
-        "fr/viveris/vizada/jnidbus/message/PendingCall", 
+        "fr/viveris/jnidbus/message/PendingCall", 
         "fail", 
         "(Ljava/lang/String;Ljava/lang/String;)V"
       ),
@@ -105,16 +105,16 @@ void handle_call_response(DBusPendingCall* pending, void* ctxPtr){
     jobject jvmObject = unserialize(ctx,&rootIter);
     env->SetObjectField(
       jvmObject,
-      find_field(ctx,"fr/viveris/vizada/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"),
+      find_field(ctx,"fr/viveris/jnidbus/serialization/DBusObject","signature","Ljava/lang/String;"),
       env->NewStringUTF(dbus_message_get_signature(msg)));
 
     env->CallVoidMethod(
       pCtx->pending_call,
       find_method(
         ctx,
-        "fr/viveris/vizada/jnidbus/message/PendingCall", 
+        "fr/viveris/jnidbus/message/PendingCall", 
         "notify", 
-        "(Lfr/viveris/vizada/jnidbus/serialization/DBusObject;)V"
+        "(Lfr/viveris/jnidbus/serialization/DBusObject;)V"
       ),
       jvmObject
     );

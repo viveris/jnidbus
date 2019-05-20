@@ -1,6 +1,6 @@
 package Common.handlers;
 
-import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
+import fr.viveris.jnidbus.dispatching.GenericHandler;
 
 import java.util.concurrent.CountDownLatch;
 
