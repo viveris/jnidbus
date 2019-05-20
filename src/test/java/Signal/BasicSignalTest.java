@@ -1,7 +1,7 @@
 package Signal;
 
 import Common.DBusTestCase;
-import Common.DBusObjects.StringMessage;
+import Common.DBusObjects.SingleStringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -32,7 +32,7 @@ public class BasicSignalTest extends DBusTestCase {
     public void signalWithWrongSignatureIsNotDispatched() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
         this.receiver.addHandler(handler);
-        StringMessage msg = new StringMessage();
+        SingleStringMessage msg = new SingleStringMessage();
         msg.setString(testString);
         this.sender.sendSignal(new StringSignalOnWrongEndpoint(msg));
         assertFalse(handler.barrier.await(2, TimeUnit.SECONDS));
@@ -42,7 +42,7 @@ public class BasicSignalTest extends DBusTestCase {
     public void signalIsSerializedAndUnserialized() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
         this.receiver.addHandler(handler);
-        StringMessage msg = new StringMessage();
+        SingleStringMessage msg = new SingleStringMessage();
         msg.setString(testString);
         this.sender.sendSignal(new StringSignal(msg));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
@@ -68,7 +68,7 @@ public class BasicSignalTest extends DBusTestCase {
                 member = "stringSignal",
                 type = HandlerType.SIGNAL
         )
-        public void stringSignal(StringMessage string){
+        public void stringSignal(SingleStringMessage string){
             if(string.getString().equals(BasicSignalTest.testString)){
                 this.barrier.countDown();
             }
@@ -91,8 +91,8 @@ public class BasicSignalTest extends DBusTestCase {
             interfaceName = "Signal.BasicSignalTest",
             member = "emptySignal"
     )
-    public static class StringSignalOnWrongEndpoint extends Signal<StringMessage>{
-        public StringSignalOnWrongEndpoint(StringMessage msg) {
+    public static class StringSignalOnWrongEndpoint extends Signal<SingleStringMessage>{
+        public StringSignalOnWrongEndpoint(SingleStringMessage msg) {
             super(msg);
         }
     }
@@ -102,8 +102,8 @@ public class BasicSignalTest extends DBusTestCase {
             interfaceName = "Signal.BasicSignalTest",
             member = "stringSignal"
     )
-    public static class StringSignal extends Signal<StringMessage>{
-        public StringSignal(StringMessage msg) {
+    public static class StringSignal extends Signal<SingleStringMessage>{
+        public StringSignal(SingleStringMessage msg) {
             super(msg);
         }
     }

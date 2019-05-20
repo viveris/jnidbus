@@ -273,24 +273,14 @@ public abstract class Message implements Serializable {
             if(isList && (!List.class.isAssignableFrom((Class)((ParameterizedType)fieldType).getRawType()) || element.getContainerType() != SupportedTypes.ARRAY))
                 throw new MessageCheckException("the field "+field.getName()+" is not of a List or the signature is not expecting a list");
 
-            switch (element.getPrimitive()){
-                case STRING:
-                    //check if the generic type contains the correct type
-                    if(isList){
-                        if(!((ParameterizedType) fieldType).getActualTypeArguments()[0].equals(String.class)) throw new MessageCheckException("the field "+field.getName()+" is not of a List of String");
-                    }else{
-                        if(!fieldType.equals(String.class)) throw new MessageCheckException("the field "+field.getName()+" is not of type String");
-                    }
-                    break;
-                case INTEGER:
-                    //check if the generic type contains the correct type
-                    if(isList){
-                        ParameterizedType paramType = (ParameterizedType) fieldType;
-                        if(!paramType.getActualTypeArguments()[0].equals(Integer.class) && !paramType.getActualTypeArguments()[0].equals(Integer.TYPE))
-                            throw new MessageCheckException("the field "+field.getName()+" is not of a List of Integer");
-                    }else {
-                        if (!fieldType.equals(String.class) && !fieldType.equals(Integer.TYPE)) throw new MessageCheckException("the field " + field.getName() + " is not of type int or Integer");
-                    }
+            //check if the generic type contains the correct type
+            SupportedTypes type = element.getPrimitive();
+            if(isList){
+                ParameterizedType paramType = (ParameterizedType) fieldType;
+                if(!paramType.getActualTypeArguments()[0].equals(type.getBoxedType()) && !paramType.getActualTypeArguments()[0].equals(type.getPrimitiveType()))
+                    throw new MessageCheckException("the field "+field.getName()+" is not of a List of Integer");
+            }else {
+                if (!fieldType.equals(type.getBoxedType()) && !fieldType.equals(type.getPrimitiveType())) throw new MessageCheckException("the field " + field.getName() + " is not of type "+type);
             }
         }else if(element.isArray()){
             //recursively check the content of the nested list

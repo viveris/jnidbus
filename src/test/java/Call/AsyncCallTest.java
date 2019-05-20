@@ -1,6 +1,6 @@
 package Call;
 
-import Common.DBusObjects.StringMessage;
+import Common.DBusObjects.SingleStringMessage;
 import Common.DBusTestCase;
 import Common.Listener;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
@@ -35,9 +35,9 @@ public class AsyncCallTest extends DBusTestCase {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
         PendingCall<Message.EmptyMessage> pendingEmpty = this.sender.call(new EmptyCall(this.receiverBusName));
-        PendingCall<StringMessage> pendingString = this.sender.call(new AsyncCallTest.StringCall(this.receiverBusName));
+        PendingCall<SingleStringMessage> pendingString = this.sender.call(new AsyncCallTest.StringCall(this.receiverBusName));
         Listener<Message.EmptyMessage> lEmpty = new Listener<>();
-        Listener<StringMessage> lString = new Listener<>();
+        Listener<SingleStringMessage> lString = new Listener<>();
         pendingEmpty.setListener(lEmpty);
         pendingString.setListener(lString);
 
@@ -81,10 +81,11 @@ public class AsyncCallTest extends DBusTestCase {
                 member = "instantReturn",
                 type = HandlerType.METHOD
         )
-        public Promise<StringMessage> instantReturn(Message.EmptyMessage msg){
-            Promise<StringMessage> promise = new Promise<>();
+        public Promise<SingleStringMessage> instantReturn(Message.EmptyMessage msg){
+            Boolean b = true;
+            Promise<SingleStringMessage> promise = new Promise<>();
             this.barrier.countDown();
-            StringMessage ret = new StringMessage();
+            SingleStringMessage ret = new SingleStringMessage();
             ret.setString("test");
             promise.resolve(ret);
             return promise;
@@ -120,10 +121,10 @@ public class AsyncCallTest extends DBusTestCase {
             member = "instantReturn"
 
     )
-    public static class StringCall extends Call<Message.EmptyMessage,StringMessage> {
+    public static class StringCall extends Call<Message.EmptyMessage, SingleStringMessage> {
         private String dest;
         public StringCall(String dest) {
-            super(Message.EMPTY,StringMessage.class);
+            super(Message.EMPTY, SingleStringMessage.class);
             this.dest = dest;
         }
 

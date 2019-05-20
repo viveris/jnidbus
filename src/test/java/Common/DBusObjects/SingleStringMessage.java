@@ -7,7 +7,7 @@ import fr.viveris.vizada.jnidbus.serialization.DBusType;
         signature = "s",
         fields = "string"
 )
-public class StringMessage extends Message {
+public class SingleStringMessage extends Message {
     private String string;
 
     public String getString() {

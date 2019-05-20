@@ -4,20 +4,32 @@ package fr.viveris.vizada.jnidbus.serialization.signature;
  * List of the types supported by the library, primitive or container
  */
 public enum SupportedTypes {
-    STRING('s'),
-    INTEGER('i'),
-    ARRAY('a'),
-    OBJECT_BEGIN('('),
-    OBJECT_END(')');
+    STRING('s',String.class,String.class),
+    INTEGER('i',Integer.TYPE,Integer.class),
+    BOOLEAN('b',Boolean.TYPE,Boolean.class),
+    BYTE('y',Byte.TYPE,Byte.class),
+    SHORT('n',Short.TYPE,Short.class),
+    LONG('x',Long.TYPE,Long.class),
+    DOUBLE('d',Double.TYPE,Double.class),
+    ARRAY('a',null,null),
+    OBJECT_BEGIN('(',null,null),
+    OBJECT_END(')',null,null);
 
     char value;
-    SupportedTypes(char s){
+    Class primitiveType;
+    Class boxedType;
+    SupportedTypes(char s,Class primitiveType, Class boxedType) {
         this.value = s;
+        this.primitiveType = primitiveType;
+        this.boxedType = boxedType;
     }
 
     public char getValue(){
         return this.value;
     }
+    public Class getPrimitiveType(){ return this.primitiveType; }
+    public Class getBoxedType(){ return this.boxedType; }
+
 
     /**
      * Get the enum entry for the given char
@@ -29,6 +41,11 @@ public enum SupportedTypes {
         switch(c){
             case 's': return STRING;
             case 'i': return INTEGER;
+            case 'b': return BOOLEAN;
+            case 'y': return BYTE;
+            case 'n': return SHORT;
+            case 'x': return LONG;
+            case 'd': return DOUBLE;
             case 'a': return ARRAY;
             case '(': return OBJECT_BEGIN;
             case ')': return OBJECT_END;

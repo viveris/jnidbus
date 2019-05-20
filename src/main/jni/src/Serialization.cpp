@@ -263,6 +263,36 @@ void serialize_element(context* ctx, int dbus_type, jobject object, DBusMessageI
             dbus_message_iter_append_basic(container, DBUS_TYPE_INT32, &valueNative);
             break;
         }
+        case DBUS_TYPE_BOOLEAN:
+        {
+            jboolean valueNative = env->CallBooleanMethod(object,find_method(ctx,"java/lang/Boolean","booleanValue","()Z"));
+            dbus_message_iter_append_basic(container,DBUS_TYPE_BOOLEAN,&valueNative);
+            break;
+        }
+        case DBUS_TYPE_BYTE:
+        {
+            jbyte valueNative = env->CallByteMethod(object,find_method(ctx,"java/lang/Byte","byteValue","()B"));
+            dbus_message_iter_append_basic(container,DBUS_TYPE_BYTE,&valueNative);
+            break;
+        }
+        case DBUS_TYPE_INT16:
+        {
+            jshort valueNative = env->CallShortMethod(object,find_method(ctx,"java/lang/Short","shortValue","()S"));
+            dbus_message_iter_append_basic(container,DBUS_TYPE_INT16,&valueNative);
+            break;
+        }
+        case DBUS_TYPE_INT64:
+        {
+            jlong valueNative = env->CallLongMethod(object,find_method(ctx,"java/lang/Long","longValue","()J"));
+            dbus_message_iter_append_basic(container,DBUS_TYPE_INT64,&valueNative);
+            break;
+        }
+        case DBUS_TYPE_DOUBLE:
+        {
+            jdouble valueNative = env->CallDoubleMethod(object,find_method(ctx,"java/lang/Double","doubleValue","()D"));
+            dbus_message_iter_append_basic(container,DBUS_TYPE_DOUBLE,&valueNative);
+            break;
+        }
         case DBUS_TYPE_INVALID:
         {
             //ignore, we reached end of iterator
@@ -297,6 +327,51 @@ jobject unserialize_element(context* ctx, DBusMessageIter* container){
             jclass integerClass = find_class(ctx,"java/lang/Integer");
             jmethodID constructor = find_method(ctx,"java/lang/Integer","<init>","(I)V");
             return env->NewObject(integerClass,constructor,value);
+        }
+        case DBUS_TYPE_BOOLEAN:
+        {
+            bool value;
+            dbus_message_iter_get_basic(container, &value);
+            jclass booleanClass = find_class(ctx,"java/lang/Boolean");
+            jmethodID constructor = find_method(ctx,"java/lang/Boolean","<init>","(Z)V");
+            return env->NewObject(booleanClass,constructor,value);
+            break;
+        }
+        case DBUS_TYPE_BYTE:
+        {
+            signed char value;
+            dbus_message_iter_get_basic(container, &value);
+            jclass byteClass = find_class(ctx,"java/lang/Byte");
+            jmethodID constructor = find_method(ctx,"java/lang/Byte","<init>","(B)V");
+            return env->NewObject(byteClass,constructor,value);
+            break;
+        }
+        case DBUS_TYPE_INT16:
+        {
+            short value;
+            dbus_message_iter_get_basic(container, &value);
+            jclass shortClass = find_class(ctx,"java/lang/Short");
+            jmethodID constructor = find_method(ctx,"java/lang/Short","<init>","(S)V");
+            return env->NewObject(shortClass,constructor,value);
+            break;
+        }
+        case DBUS_TYPE_INT64:
+        {
+            long value;
+            dbus_message_iter_get_basic(container, &value);
+            jclass longClass = find_class(ctx,"java/lang/Long");
+            jmethodID constructor = find_method(ctx,"java/lang/Long","<init>","(J)V");
+            return env->NewObject(longClass,constructor,value);
+            break;
+        }
+        case DBUS_TYPE_DOUBLE:
+        {
+            double value;
+            dbus_message_iter_get_basic(container, &value);
+            jclass doubleClass = find_class(ctx,"java/lang/Double");
+            jmethodID constructor = find_method(ctx,"java/lang/Double","<init>","(D)V");
+            return env->NewObject(doubleClass,constructor,value);
+            break;
         }
         case DBUS_TYPE_INVALID:
         {

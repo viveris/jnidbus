@@ -2,7 +2,7 @@ package Call;
 
 import Common.DBusTestCase;
 import Common.Listener;
-import Common.DBusObjects.StringMessage;
+import Common.DBusObjects.SingleStringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -34,10 +34,10 @@ public class BasicCallTest extends DBusTestCase {
     public void callIsSerializedAndUnserialized() throws InterruptedException {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
-        StringMessage msg = new StringMessage();
+        SingleStringMessage msg = new SingleStringMessage();
         msg.setString("test");
-        PendingCall<StringMessage> pending = this.sender.call(new StringCall(this.receiverBusName,msg));
-        Listener<StringMessage> l = new Listener<>();
+        PendingCall<SingleStringMessage> pending = this.sender.call(new StringCall(this.receiverBusName,msg));
+        Listener<SingleStringMessage> l = new Listener<>();
         pending.setListener(l);
         assertTrue(handler.barrier.await(5, TimeUnit.SECONDS));
         assertTrue(l.getBarrier().await(5, TimeUnit.SECONDS));
@@ -65,9 +65,9 @@ public class BasicCallTest extends DBusTestCase {
                 member = "stringCall",
                 type = HandlerType.METHOD
         )
-        public StringMessage stringCall(StringMessage msg){
+        public SingleStringMessage stringCall(SingleStringMessage msg){
             this.barrier.countDown();
-            StringMessage ret = new StringMessage();
+            SingleStringMessage ret = new SingleStringMessage();
             ret.setString(msg.getString());
             return ret;
         }
@@ -102,10 +102,10 @@ public class BasicCallTest extends DBusTestCase {
             member = "stringCall"
 
     )
-    public static class StringCall extends Call<StringMessage,StringMessage> {
+    public static class StringCall extends Call<SingleStringMessage, SingleStringMessage> {
         private String dest;
-        public StringCall(String dest, StringMessage msg) {
-            super(msg,StringMessage.class);
+        public StringCall(String dest, SingleStringMessage msg) {
+            super(msg, SingleStringMessage.class);
             this.dest = dest;
         }
 

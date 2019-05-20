@@ -10,7 +10,7 @@ This library is distributed under the [AFL licence](https://opensource.org/licen
 
 JNIdbus uses annotations and reflection to serialize POJO into DBus messages. The following types are supported:
 
-- Integer (and primitive int)
+- Boolean, Byte, Short, Integer, Long, Double and their primitive equivalent
 - String
 - Nested serializable objects
 - Lists
@@ -317,7 +317,7 @@ If an unexpected exception happens in a handler, a `DBusException` will be autom
 
 ## Planned features
 
-- Asynchronous handler return type in the same fashion as the `PendingCall`
+- Support `DICT_ENTRY` type
 - Provide a way to know when the event loop is ready to send more messages
 - Integrate Log4J for a easier debugging
 - Extension functions for Kotlin and support for coroutines

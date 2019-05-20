@@ -2,7 +2,7 @@ package Call;
 
 import Common.DBusTestCase;
 import Common.Listener;
-import Common.DBusObjects.StringMessage;
+import Common.DBusObjects.SingleStringMessage;
 import fr.viveris.vizada.jnidbus.dispatching.GenericHandler;
 import fr.viveris.vizada.jnidbus.dispatching.HandlerType;
 import fr.viveris.vizada.jnidbus.dispatching.annotation.Handler;
@@ -39,8 +39,8 @@ public class FailedCallTest extends DBusTestCase {
     public void callReturnsWrongSignature() throws InterruptedException {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
-        PendingCall<StringMessage> pending = this.sender.call(new MismatchCall(this.receiverBusName));
-        Listener<StringMessage> l = new Listener<>();
+        PendingCall<SingleStringMessage> pending = this.sender.call(new MismatchCall(this.receiverBusName));
+        Listener<SingleStringMessage> l = new Listener<>();
         pending.setListener(l);
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         assertTrue(l.getBarrier().await(2, TimeUnit.SECONDS));
@@ -119,10 +119,10 @@ public class FailedCallTest extends DBusTestCase {
             member = "mismatchCall"
 
     )
-    public static class MismatchCall extends Call<Message.EmptyMessage,StringMessage> {
+    public static class MismatchCall extends Call<Message.EmptyMessage, SingleStringMessage> {
         private String dest;
         public MismatchCall(String dest) {
-            super(Message.EMPTY,StringMessage.class);
+            super(Message.EMPTY, SingleStringMessage.class);
             this.dest = dest;
         }
 
