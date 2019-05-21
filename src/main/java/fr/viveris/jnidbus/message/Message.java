@@ -5,8 +5,6 @@ import fr.viveris.jnidbus.serialization.DBusType;
 import fr.viveris.jnidbus.serialization.Serializable;
 import fr.viveris.jnidbus.cache.MessageMetadata;
 import fr.viveris.jnidbus.serialization.signature.Signature;
-import fr.viveris.jnidbus.serialization.signature.SupportedTypes;
-import fr.viveris.jnidbus.exception.MessageCheckException;
 import fr.viveris.jnidbus.exception.MessageSignatureMismatch;
 import fr.viveris.jnidbus.cache.Cache;
 import fr.viveris.jnidbus.serialization.signature.SignatureElement;
@@ -44,7 +42,7 @@ public abstract class Message implements Serializable {
     public DBusObject serialize() {
         //retrieve reflection data from the cache
         Class<? extends Message> clazz = this.getClass();
-        MessageMetadata messageMetadata = Message.retreiveFromCache(clazz);
+        MessageMetadata messageMetadata = Message.retrieveFromCache(clazz);
 
         //set the array length at the number of field and iterate on the signature
         Object[] values = new Object[messageMetadata.getFields().length];
@@ -85,7 +83,7 @@ public abstract class Message implements Serializable {
     public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
         //retrieve reflection data from the cache
         Class<? extends Message> clazz = this.getClass();
-        MessageMetadata messageMetadata = Message.retreiveFromCache(clazz);
+        MessageMetadata messageMetadata = Message.retrieveFromCache(clazz);
 
         //check if the given pre-unserialized object have the same signature as this class
         if(!messageMetadata.getSignature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+ messageMetadata.getSignature()+" but got "+obj.getSignature());
@@ -108,7 +106,7 @@ public abstract class Message implements Serializable {
                     setter.invoke(this,Message.unserializeList((Object[])values[i],element,((ParameterizedType)setter.getGenericParameterTypes()[0]).getActualTypeArguments()[0]));
                 }else if(element.isObject()){
                     //retrieve the needed object class from cache and create a new instance
-                    Serializable unserialized = Message.retreiveFromCache(setter.getParameterTypes()[0].asSubclass(Serializable.class)).newInstance();
+                    Serializable unserialized = Message.retrieveFromCache(setter.getParameterTypes()[0].asSubclass(Serializable.class)).newInstance();
                     //recursively unserialize
                     unserialized.unserialize(new DBusObject(element.getSignatureString(),((DBusObject)values[i]).getValues()));
                     setter.invoke(this,unserialized);
@@ -178,7 +176,7 @@ public abstract class Message implements Serializable {
                     if(isRecusiveList){
                         list.add(Message.unserializeList((Object[]) o,signature.getSignature().getFirst(),((ParameterizedType)genericType).getActualTypeArguments()[0]));
                     }else{
-                        Serializable obj = Message.retreiveFromCache((Class<? extends Serializable>)genericType).newInstance();
+                        Serializable obj = Message.retrieveFromCache((Class<? extends Serializable>)genericType).newInstance();
                         //generate DBusObject from raw data and signature element object
                         obj.unserialize(new DBusObject(elementSignatureString,((DBusObject)o).getValues()));
                         list.add(obj);
@@ -196,26 +194,32 @@ public abstract class Message implements Serializable {
      * @param clazz class to retrieve
      * @return the cached entity
      */
-    public static MessageMetadata retreiveFromCache(Class<? extends Serializable> clazz){
+    public static MessageMetadata retrieveFromCache(Class<? extends Serializable> clazz){
         //try to retrieve from cache or create cache
         Cache<String,MessageMetadata> cache = CACHE.get(clazz.getClassLoader());
 
         //if the cache is null, make the entity null, the cache will be created when the clazz is processed
-        if(cache != null && cache.getCachedEntity(clazz.getName()) != null) {
-            return cache.getCachedEntity(clazz.getName());
-        }
-        else{
-            try {
-                //check if the entity is in cache, if so everything have already been checked and cached
-                if (!CACHE.containsKey(clazz.getClassLoader())) CACHE.put(clazz.getClassLoader(), new Cache<String, MessageMetadata>());
-                if (CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName()) != null) return CACHE.get(clazz.getClassLoader()).getCachedEntity(clazz.getName());
-
-                MessageMetadata meta = new MessageMetadata(clazz);
-                Message.addToCache(clazz,meta);
+        MessageMetadata meta = null;
+        if(cache != null) {
+            meta = cache.getCachedEntity(clazz.getName());
+            if(meta != null){
                 return meta;
-            } catch (Exception e) {
-                throw new IllegalStateException("Message validity check failed: " + e, e);
             }
+        }
+
+        try {
+            //check if the entity is in cache, if so everything have already been checked and cached
+            if (cache == null){
+                cache = new Cache<>();
+                CACHE.put(clazz.getClassLoader(),cache);
+            }
+            if (cache.getCachedEntity(clazz.getName()) != null) return cache.getCachedEntity(clazz.getName());
+
+            meta = new MessageMetadata(clazz);
+            Message.addToCache(clazz,meta);
+            return meta;
+        } catch (Exception e) {
+            throw new IllegalStateException("Message validity check failed: " + e, e);
         }
     }
 

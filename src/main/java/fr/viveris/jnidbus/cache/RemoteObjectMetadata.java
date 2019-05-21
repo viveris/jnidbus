@@ -1,6 +1,5 @@
 package fr.viveris.jnidbus.cache;
 
-import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.exception.RemoteObjectCheck;
 import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.PendingCall;
@@ -33,11 +32,11 @@ public class RemoteObjectMetadata {
         //process input type
         Class<?>[] params = method.getParameterTypes();
         if(params.length == 0){
-            this.inputMetadata = Message.retreiveFromCache(Message.EmptyMessage.class);
+            this.inputMetadata = Message.retrieveFromCache(Message.EmptyMessage.class);
         } else if(params.length == 1){
             if(!Serializable.class.isAssignableFrom(params[0])) throw new RemoteObjectCheck("A remote method parameter must be serializable");
             Class<? extends Serializable> inputClass = params[0].asSubclass(Serializable.class);
-            this.inputMetadata = Message.retreiveFromCache(inputClass);
+            this.inputMetadata = Message.retrieveFromCache(inputClass);
         }else{
             throw new RemoteObjectCheck("A remote method can only have one parameter");
         }
@@ -48,7 +47,7 @@ public class RemoteObjectMetadata {
         if(!PendingCall.class.equals(((ParameterizedType)output).getRawType())) throw new RemoteObjectCheck("The return type is not a PendingCall");
 
         Type realOutputType = ((ParameterizedType)output).getActualTypeArguments()[0];
-        this.outputMetadata = Message.retreiveFromCache(((Class)realOutputType).asSubclass(Serializable.class));
+        this.outputMetadata = Message.retrieveFromCache(((Class)realOutputType).asSubclass(Serializable.class));
 
     }
 

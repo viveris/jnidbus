@@ -50,9 +50,9 @@ public class HandlerMethod{
         this.handlerMethod = handlerMethod;
 
         //put input and output in cache
-        this.inputType = Message.retreiveFromCache(handlerMethod.getParameterTypes()[0].asSubclass(Serializable.class));
+        this.inputType = Message.retrieveFromCache(handlerMethod.getParameterTypes()[0].asSubclass(Serializable.class));
         if( returnType != null){
-            this.outputType = Message.retreiveFromCache(returnType.asSubclass(Serializable.class));
+            this.outputType = Message.retrieveFromCache(returnType.asSubclass(Serializable.class));
         }else{
             this.outputType = null;
         }

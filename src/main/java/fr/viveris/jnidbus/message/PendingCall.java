@@ -106,7 +106,7 @@ public class PendingCall<T extends Serializable> {
                 value = (T) Message.EMPTY;
             }else{
                 //retreive the cached entity and create a new instance of the return result
-                value = (T) Message.retreiveFromCache(this.clazz).newInstance();
+                value = (T) Message.retrieveFromCache(this.clazz).newInstance();
                 value.unserialize(response);
             }
             this.result = value;
