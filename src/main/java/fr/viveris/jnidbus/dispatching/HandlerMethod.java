@@ -1,8 +1,8 @@
 package fr.viveris.jnidbus.dispatching;
 
-import fr.viveris.jnidbus.serialization.Serializable;
-import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.cache.MessageMetadata;
+import fr.viveris.jnidbus.message.Message;
+import fr.viveris.jnidbus.serialization.Serializable;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

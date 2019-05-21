@@ -1,20 +1,15 @@
 package fr.viveris.jnidbus;
 
+import fr.viveris.jnidbus.bindings.bus.Connection;
 import fr.viveris.jnidbus.bindings.bus.EventLoop;
 import fr.viveris.jnidbus.cache.SignalMetadata;
 import fr.viveris.jnidbus.dispatching.Criteria;
 import fr.viveris.jnidbus.dispatching.Dispatcher;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
 import fr.viveris.jnidbus.dispatching.HandlerMethod;
-import fr.viveris.jnidbus.exception.ConnectionException;
-import fr.viveris.jnidbus.message.PendingCall;
-import fr.viveris.jnidbus.bindings.bus.Connection;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
-import fr.viveris.jnidbus.message.Message;
-import fr.viveris.jnidbus.message.sendingrequest.CallSendingRequest;
+import fr.viveris.jnidbus.exception.ConnectionException;
 import fr.viveris.jnidbus.message.sendingrequest.SignalSendingRequest;
-import fr.viveris.jnidbus.remote.RemoteInterface;
-import fr.viveris.jnidbus.remote.RemoteMember;
 import fr.viveris.jnidbus.remote.RemoteObjectInterceptor;
 import fr.viveris.jnidbus.remote.Signal;
 

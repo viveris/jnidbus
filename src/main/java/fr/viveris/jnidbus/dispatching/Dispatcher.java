@@ -1,11 +1,11 @@
 package fr.viveris.jnidbus.dispatching;
 
 import fr.viveris.jnidbus.bindings.bus.EventLoop;
-import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.Promise;
 import fr.viveris.jnidbus.message.sendingrequest.ErrorReplySendingRequest;
 import fr.viveris.jnidbus.message.sendingrequest.ReplySendingRequest;
+import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.serialization.Serializable;
 
 import java.util.ArrayList;

@@ -17,7 +17,9 @@ public class RemoteObjectMetadata {
     private MessageMetadata outputMetadata;
 
     /**
-     * Create a new
+     * Create a new cache entry for the given remote method call. the method will be checked and an exception will be
+     * thrown if an error was detected
+     *
      * @param method
      */
     @SuppressWarnings("unchecked")

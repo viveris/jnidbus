@@ -1,8 +1,8 @@
 package fr.viveris.jnidbus.message;
 
 import fr.viveris.jnidbus.bindings.bus.EventLoop;
-import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.exception.DBusException;
+import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.serialization.Serializable;
 
 /**

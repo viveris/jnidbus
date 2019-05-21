@@ -34,6 +34,15 @@ public class RemoteObjectInterceptor implements InvocationHandler {
 
     private EventLoop eventLoop;
 
+    /**
+     * Create an interceptor for the given interface, it will check all the methods of the interface and cache them for
+     * later use
+     *
+     * @param destinationBus bus name on which the remote object is reachable
+     * @param objectPath object path on the bus
+     * @param remoteObjectClass Java interface class representing the object
+     * @param eventLoop event loop on which we should dispatch the methods calls
+     */
     public RemoteObjectInterceptor(String destinationBus, String objectPath, Class<?> remoteObjectClass, EventLoop eventLoop){
         this.destinationBus = destinationBus;
         this.objectPath = objectPath;

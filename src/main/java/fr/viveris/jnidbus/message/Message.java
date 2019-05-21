@@ -1,15 +1,17 @@
 package fr.viveris.jnidbus.message;
 
+import fr.viveris.jnidbus.cache.Cache;
+import fr.viveris.jnidbus.cache.MessageMetadata;
+import fr.viveris.jnidbus.exception.MessageSignatureMismatch;
 import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.serialization.DBusType;
 import fr.viveris.jnidbus.serialization.Serializable;
-import fr.viveris.jnidbus.cache.MessageMetadata;
 import fr.viveris.jnidbus.serialization.signature.Signature;
-import fr.viveris.jnidbus.exception.MessageSignatureMismatch;
-import fr.viveris.jnidbus.cache.Cache;
 import fr.viveris.jnidbus.serialization.signature.SignatureElement;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 /**

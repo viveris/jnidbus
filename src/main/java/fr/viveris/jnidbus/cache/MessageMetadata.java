@@ -46,6 +46,14 @@ public class MessageMetadata {
      */
     private Class<? extends Serializable> clazz;
 
+    /**
+     * Create a new cache entry for the given message class. The class will be checked and an exception will be thrown if
+     * an error was found. If the class contains other serializable classes, it will recursively check those as well and
+     * cache them.
+     *
+     * @param clazz
+     * @throws MessageCheckException
+     */
     public MessageMetadata(Class<? extends Serializable> clazz) throws MessageCheckException {
         this.clazz = clazz;
 

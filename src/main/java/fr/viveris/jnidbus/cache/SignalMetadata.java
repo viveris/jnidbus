@@ -8,6 +8,11 @@ public class SignalMetadata {
     private String interfaceName;
     private String member;
 
+    /**
+     * Create a new cache entry for the given signal class. The class will be checked and an exception will be thrown if
+     * an error was found
+     * @param signal
+     */
     public SignalMetadata(Class<? extends Signal> signal){
         Class<?> enclosing = signal.getEnclosingClass();
         if(enclosing == null) throw new IllegalArgumentException("The signal class must be enclosed by an interface annotated with RemoteInterface");
