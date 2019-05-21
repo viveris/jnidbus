@@ -30,7 +30,7 @@ public class EventLoop implements Closeable {
     /**
      * Limit the number of send by tick to avoid event loop stall
      */
-    public static final int MAX_SEND_PER_TICK = 256;
+    public static final int MAX_SEND_PER_TICK = 128;
 
     /**
      * Pointer to the native context, this must not be modified by any java code

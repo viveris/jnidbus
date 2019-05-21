@@ -7,8 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#undef fr_viveris_jnidbus_bindings_bus_EventLoop_SENDING_QUEUE_SIZE
-#define fr_viveris_jnidbus_bindings_bus_EventLoop_SENDING_QUEUE_SIZE 128L
+#undef fr_viveris_jnidbus_bindings_bus_EventLoop_MAX_SEND_PER_TICK
+#define fr_viveris_jnidbus_bindings_bus_EventLoop_MAX_SEND_PER_TICK 128L
 /*
  * Class:     fr_viveris_jnidbus_bindings_bus_EventLoop
  * Method:    setup
