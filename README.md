@@ -198,77 +198,32 @@ public class CallHandler extends GenericHandler {
 }
 ```
 
+### Exception handling
 
+Exception handling is made through the `DBusException` class, which contains two fields: `code` and `message` which correspond to the DBus error fields of the same name. If an error happens in your handler method call, you should catch it and throw a new `DBusException` with tis field correctly set so the caller can process the error.
 
-### Send a Signal
-
-Signals are classes extending the `Signal` class and annotated with the `DbusSignal` annotation. The `Signal` class is generic and its generic type correspond to the `Message` you want to send.
-
-Please note that sending is asynchronous in JNIDBus and the sending queue have a limited size which means calls to `sendSignal()` might throw an exception if the queue is full.
-
-*<u>example of a string signal and of an empty signal:</u>*
-
-```java
-@DbusSignal(
-    path = "/object/path/of/the/signal",
-    interfaceName = "interface.of.the.signal",
-    member = "signalName"
-)
-public static class EmptySignal extends Signal<Message.EmptyMessage>{
-    public EmptySignal() {
-        //the super constructor takes as argument an instance of the Message to send
-        super(Message.EMPTY);
-    }
-}
-
-@DbusSignal(
-    path = "/object/path/of/the/signal",
-    interfaceName = "interface.of.the.signal",
-    member = "signalName"
-)
-public static class StringSignal extends Signal<StringMessage>{
-    public StringSignal(StringMessage msg) {
-        super(msg);
-    }
-}
-```
-
-*<u>how to send the signals:</u>*
-
-```java
-//connect to the DBus deamon
-Dbus sender = new Dbus(BusType.SESSION,"my.bus.name");
-
-//create and fill your message
-StringMessage msg = new StringMessage();
-msg.setString("A string");
-
-//simply send it
-sender.sendSignal(new StringSignal(msg));
-```
+If an unexpected exception happens in a handler, a `DBusException` will be automatically created with its code being the name of the exception class and its message the message of the exception. Beware, if an exception happen outside of the event loop (ie. asynchronous handler), uncaught exception won't be automatically sent back to the caller and will be lost in the current thread exception handler.
 
 ### Send a call
 
-Calls are built the same way as signals. Call classes must extends the `Call` class and have the `DbusMethodCall` annotation. The `Call` class have two generic types, the input and the output of the destination call.
+JNIDBus provide a way to represent your DBus distant objects through `Java proxies`. You describe your DBus object as an interface with a `@RemoteInterface` annotation and annotate the methods with `@RemoteMember`. All of the interface methods must be annotated.
 
-When sending a call, JNIDBus will return you a `PendingCall` object to which you can bind a listener that will be notified when a result or an error is received. A listener will be notified once and further results/errors will be ignored. you can cancel a call by manually calling the `fail()` method on the `PendingCall` which will notify the listener and block any incoming result. The Listener will be executed on same thread as handlers and as the event loop so you must avoid blocking code at all cost.
+There must be only one parameter on each method which must be serializable. If your call do not have any parameter you can omit it instead of using the `EMptyMessage` class. Each method must return a `PendingCall` with its generic type being the expected return type.
+
+The`PendingCall` class allows you to bind a listener that will be notified when a result or an error is received. A listener will be notified once and further results/errors will be ignored. you can cancel a call by manually calling the `fail()` method on the `PendingCall` which will notify the listener and block any incoming result. The Listener will be executed on same thread as the event loop so you must avoid blocking code at all cost.
 
 Result or errors ignored will be stored in the `PendingCall` object for debug purposes.
 
 *<u>example of a call without input that returns a string:</u>*
 
 ```java
-@DbusMethodCall(
-    destination = "destination.bus.name",
-    path = "/call/object/path",
-    interfaceName = "call.interface.name",
-    member = "someCall"
-
-)
-public static class StringCall extends Call<Message.EmptyMessage,StringMessage> {
-    public StringCall() {
-        super(Message.EMPTY,StringMessage.class);
-    }
+@RemoteInterface("call.interface.name")
+public interface MyRemoteObject{
+    
+    @RemoteMember("someCall")
+    PendingCall<StringMessage> call();
+    //equivalent to: 
+    //PendingCall<StringMessage> call(Message.EmptyMessage msg)
 }
 ```
 
@@ -295,12 +250,17 @@ public class StringListener implements PendingCall.Listener<StringMessage>{
 //connect to the DBus deamon
 Dbus sender = new Dbus(BusType.SESSION,"my.bus.name");
 
+//create the proxy instance of your remote object
+MyRemoteObject remote = sender.createRemoteObject("receiver.bus.name",
+                                                  "/remote/object/path",
+                                                  MyRemoteObject.class);
+
 //create your message and fill it
 StringMessage msg = new StringMessage();
 msg.setString("test");
 
-//send the call
-PendingCall<StringMessage> pending = sender.call(new StringCall());
+//call the method on your remote object
+PendingCall<StringMessage> pending = remote.call(;
 
 //create the listener
 StringListener l = new StringListener();
@@ -309,16 +269,51 @@ StringListener l = new StringListener();
 pending.setListener(l);
 ```
 
-### Exception handling
+### Send a Signal
 
-Exception handling is made through the `DBusException` class, which contains two fields: `code` and `message` which correspond to the DBus error fields of the same name. If an error happens in your handler method call, you should catch it and throw a new `DBusException` with tis field correctly set so the caller can process the error.
+Signals are represented with inner classes of a `RemoteInterface` extending the `Signal` class. The generic type of the `Signal` class will be the data attached to this signal
 
-If an unexpected exception happens in a handler, a `DBusException` will be automatically created with its code being the name of the exception class and its message the message of the exception.
+*<u>example of a string signal and of an empty signal:</u>*
+
+```java
+
+@RemoteInterface("call.interface.name")
+public interface MyRemoteObject{
+    
+    @RemoteMember("emptySignal")
+    class EmptySignal extends Signal<Message.EmptyMessage>{
+        public EmptySignal() {
+            //the super constructor takes as argument an instance of the Message to send
+            super(Message.EMPTY);
+        }
+    }
+
+    @RemoteMember("stringSignal")
+    class StringSignal extends Signal<StringMessage>{
+        public StringSignal(StringMessage msg) {
+            super(msg);
+        }
+    }
+}
+```
+
+*<u>how to send the signals:</u>*
+
+```java
+//connect to the DBus deamon
+Dbus sender = new Dbus(BusType.SESSION,"my.bus.name");
+
+//create and fill your message
+StringMessage msg = new StringMessage();
+msg.setString("A string");
+
+//simply send it
+sender.sendSignal("/remote/object/path",new MyRemoteObject.StringSignal(msg));
+```
 
 ## Planned features
 
 - Support `DICT_ENTRY` type
-- Provide a way to know when the event loop is ready to send more messages
 - Integrate Log4J for a easier debugging
 - Extension functions for Kotlin and support for coroutines
 
@@ -330,7 +325,7 @@ Java 7 and Java 11 where tested. You will also need `libc` and `libdbus-1` to ru
 
 ##### How fast is this library
 
-I was able to get around 35k complex signals (nested lists and objects) sent and received on a single event loop on my modest i3-4130 work machine. I was able to get around 58k empty signals with the same setup. This is fast enough for most of the use cases so unless you really need to push DBus to its limit it's enough.
+I was able to get around 35k complex signals (nested lists and objects) sent and received on a single event loop on my modest i3-4130 work machine. I was able to get around 58k empty signals with the same setup. This should satisfy most of the use cases so unless you really need to push DBus to its limit it's enough.
 
 ##### I found a bug
 

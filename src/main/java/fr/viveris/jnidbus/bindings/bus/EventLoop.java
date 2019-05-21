@@ -28,9 +28,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class EventLoop implements Closeable {
     /**
-     * Limit the sending queue size to reduce back-pressure risks
+     * Limit the number of send by tick to avoid event loop stall
      */
-    public static final int SENDING_QUEUE_SIZE = 128;
+    public static final int MAX_SEND_PER_TICK = 256;
 
     /**
      * Pointer to the native context, this must not be modified by any java code
@@ -58,15 +58,14 @@ public class EventLoop implements Closeable {
     private Thread thread;
 
     /**
-     * Queue of dispatchers to register to Dbus (unlimited because very few calls will be done to it, but we use a queue anyway to allow
-     * runtime dispatcher registration
+     * Queue of dispatchers to register to Dbus
      */
     private LinkedBlockingDeque<Dispatcher> handlerAddingQueue = new LinkedBlockingDeque<>();
 
     /**
      * Queue of sending request. A sending request represent any type of message we want to send through DBus (signal, calls, method return, errors)
      */
-    private LinkedBlockingDeque<AbstractSendingRequest> signalSendingQueue = new LinkedBlockingDeque<>(SENDING_QUEUE_SIZE);
+    private LinkedBlockingDeque<AbstractSendingRequest> signalSendingQueue = new LinkedBlockingDeque<>();
 
     /**
      * Queue containing the PendingCall that received the result before the listener was set and that need to dispatch the
@@ -228,9 +227,8 @@ public class EventLoop implements Closeable {
                 this.redispatchRequestQueue.poll().forceNotification();
             }
 
-            //limit the number of send request processed in order to avoid the ticking rate to slow down too much
             int i = 0;
-            while(!this.signalSendingQueue.isEmpty() && i<SENDING_QUEUE_SIZE){
+            while(!this.signalSendingQueue.isEmpty() && i< MAX_SEND_PER_TICK){
                 AbstractSendingRequest abstarctRequest = this.signalSendingQueue.poll();
                 if(abstarctRequest instanceof CallSendingRequest){
                     CallSendingRequest req = (CallSendingRequest)abstarctRequest;

@@ -25,7 +25,7 @@ public class BasicCallTest extends DBusTestCase {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
         BasicCallTestRemote remoteObj = this.sender.createRemoteObject(this.receiverBusName,"/Call/BasicCallTest",BasicCallTestRemote.class);
-        PendingCall<Message.EmptyMessage> pending = remoteObj.emptyCall(Message.EMPTY);
+        PendingCall<Message.EmptyMessage> pending = remoteObj.emptyCall();
         Listener<Message.EmptyMessage> l = new Listener<>();
         pending.setListener(l);
         assertTrue(handler.barrier.await(5, TimeUnit.SECONDS));
@@ -84,7 +84,7 @@ public class BasicCallTest extends DBusTestCase {
     public interface BasicCallTestRemote {
 
         @RemoteMember("emptyCall")
-        PendingCall<Message.EmptyMessage> emptyCall(Message.EmptyMessage msg);
+        PendingCall<Message.EmptyMessage> emptyCall();
 
         @RemoteMember("stringCall")
         PendingCall<SingleStringMessage> stringCall(SingleStringMessage msg);
