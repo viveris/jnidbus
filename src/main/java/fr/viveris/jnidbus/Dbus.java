@@ -1,20 +1,24 @@
 package fr.viveris.jnidbus;
 
 import fr.viveris.jnidbus.bindings.bus.EventLoop;
+import fr.viveris.jnidbus.cache.SignalMetadata;
 import fr.viveris.jnidbus.dispatching.Criteria;
 import fr.viveris.jnidbus.dispatching.Dispatcher;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
 import fr.viveris.jnidbus.dispatching.HandlerMethod;
 import fr.viveris.jnidbus.exception.ConnectionException;
 import fr.viveris.jnidbus.message.PendingCall;
-import fr.viveris.jnidbus.message.Signal;
 import fr.viveris.jnidbus.bindings.bus.Connection;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
-import fr.viveris.jnidbus.message.Call;
 import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.sendingrequest.CallSendingRequest;
 import fr.viveris.jnidbus.message.sendingrequest.SignalSendingRequest;
+import fr.viveris.jnidbus.remote.RemoteInterface;
+import fr.viveris.jnidbus.remote.RemoteMember;
+import fr.viveris.jnidbus.remote.RemoteObjectInterceptor;
+import fr.viveris.jnidbus.remote.Signal;
 
+import java.lang.reflect.Proxy;
 import java.util.HashMap;
 
 /**
@@ -98,29 +102,28 @@ public class Dbus implements AutoCloseable {
     }
 
     /**
-     * Send a Signal to the bus. This method is asynchronous and will throw an exception if the sending queue is full.
-     * If the queue is full you should wait for it to drain and try to send again.
+     * Create a new remote object instance which annotated methods will be translated into DBus calls and signals. The
+     * given class must be annotated with the RemoteInterface annotation and all of its methods must be annotated with
+     * the RemoteMember annotation. The created instance is a Java proxy registered to the current DBus instance ClassLoader.
      *
-     * @param sig signal to send
+     * All the methods of the given interface should return either a Promise of a Message or void
+     *
+     * @param destinationBus
+     * @param objectPath
+     * @param objectInterface
+     * @param <T>
+     * @return
      */
-    public void sendSignal(Signal sig){
-        this.eventLoop.send(new SignalSendingRequest(sig.getParams(),sig.getPath(),sig.getInterfaceName(),sig.getMember()));
+    @SuppressWarnings("unchecked")
+    public <T> T createRemoteObject(String destinationBus, String objectPath, Class<T> objectInterface){
+        return (T) Proxy.newProxyInstance(this.getClass().getClassLoader(),new Class[]{objectInterface},new RemoteObjectInterceptor(destinationBus,objectPath,objectInterface,this.eventLoop));
     }
 
-    /**
-     * Call a dbus method. This method is asynchronous and will throw an exception if the sending queue is full. If the
-     * queue is full you should wait for it to drain and try to send again. The returned PendingCall provides to needed
-     * API to wait for the result or error to be received.
-     *
-     * @param call call to send
-     * @param <T> return type of the call
-     * @return PendingCall for the sent call
-     */
-    public <T extends Message> PendingCall<T> call(Call<?,T> call){
-        PendingCall<T> pending = new PendingCall<>(call.getReturnType(),this.eventLoop);
-        this.eventLoop.send(new CallSendingRequest(call.getParams(),call.getPath(),call.getInterfaceName(),call.getMember(),call.getDestination(),pending));
-        return pending;
+    public void sendSignal(String objectPath, Signal signal){
+        SignalMetadata meta = RemoteObjectInterceptor.getFromCache(signal.getClass());
+        this.eventLoop.send(new SignalSendingRequest(signal.getParam().serialize(),objectPath,meta.getInterfaceName(),meta.getMember()));
     }
+
 
     @Override
     public void close() throws Exception {

@@ -15,7 +15,7 @@ public class Criteria {
     private String member;
     private String inputSignature;
     private String outputSignature;
-    private HandlerType type;
+    private MemberType type;
 
     /**
      * Create a new criteria, its output signature can be null
@@ -25,7 +25,7 @@ public class Criteria {
      * @param outputSignature used for debug only, as DBus does not do any match on output signature it is just a way for the developer
      *        to quickly see what DBus signature is generated.
      */
-    public Criteria(String member, String inputSignature, String outputSignature, HandlerType type) {
+    public Criteria(String member, String inputSignature, String outputSignature, MemberType type) {
         this.member = member;
         this.inputSignature = inputSignature;
         this.outputSignature = outputSignature;
@@ -42,7 +42,7 @@ public class Criteria {
 
     public String getOutputSignature() { return outputSignature; }
 
-    public HandlerType getType() { return type; }
+    public MemberType getType() { return type; }
 
     @Override
     public String toString() {

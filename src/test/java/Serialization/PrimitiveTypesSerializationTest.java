@@ -20,7 +20,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive(1);
         msg.setBoxed(2);
         msg.setList(Arrays.asList(3));
-        this.sender.sendSignal(new IntHandler.IntSignal(msg));
+        this.sender.sendSignal("/handlers/primitive/int",new IntHandler.IntHandlerRemote.IntSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertEquals(1,handler.getValue().getPrimitive());
         assertEquals(2,handler.getValue().getBoxed().intValue());
@@ -35,7 +35,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive(true);
         msg.setBoxed(false);
         msg.setList(Arrays.asList(true));
-        this.sender.sendSignal(new BooleanHandler.BooleanSignal(msg));
+        this.sender.sendSignal("/handlers/primitive/boolean",new BooleanHandler.BooleanHandlerRemote.BooleanSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertTrue(handler.getValue().getPrimitive());
         assertFalse(handler.getValue().getBoxed());
@@ -50,7 +50,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive((byte)1);
         msg.setBoxed((byte)2);
         msg.setList(Arrays.asList((byte)3));
-        this.sender.sendSignal(new ByteHandler.ByteSignal(msg));
+        this.sender.sendSignal("/handlers/primitive/byte",new ByteHandler.ByteHandlerRemote.ByteSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertEquals(1,handler.getValue().getPrimitive());
         assertEquals(2,handler.getValue().getBoxed().byteValue());
@@ -65,7 +65,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive((short)1);
         msg.setBoxed((short)2);
         msg.setList(Arrays.asList((short)3));
-        this.sender.sendSignal(new ShortHandler.ShortSignal(msg));
+        this.sender.sendSignal("/handlers/primitive/short",new ShortHandler.ShortHandlerRemote.ShortSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertEquals(1,handler.getValue().getPrimitive());
         assertEquals(2,handler.getValue().getBoxed().shortValue());
@@ -80,7 +80,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive(1L);
         msg.setBoxed(2L);
         msg.setList(Arrays.asList(3L));
-        this.sender.sendSignal(new LongHandler.LongSignal(msg));
+        this.sender.sendSignal("/handlers/primitive/long",new LongHandler.LongHandlerRemote.LongSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertEquals(1L,handler.getValue().getPrimitive());
         assertEquals(2L,handler.getValue().getBoxed().longValue());
@@ -95,7 +95,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive(1.1);
         msg.setBoxed(2.2);
         msg.setList(Arrays.asList(3.3));
-        this.sender.sendSignal(new DoubleHandler.DoubleSignal(msg));
+        this.sender.sendSignal("/handlers/primitive/double",new DoubleHandler.DoubleHandlerRemote.DoubleSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertEquals(1.1,handler.getValue().getPrimitive(),0);
         assertEquals(2.2,handler.getValue().getBoxed(),0);

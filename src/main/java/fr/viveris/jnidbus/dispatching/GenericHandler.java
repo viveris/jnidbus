@@ -48,7 +48,7 @@ public abstract class GenericHandler {
                 throw new IllegalArgumentException("A handler method parameter must have the DBusType annotation and be Serializable");
             }
 
-            if(annotation.type() == HandlerType.METHOD && (returnAnnotation == null || !Serializable.class.isAssignableFrom(returnType))){
+            if(annotation.type() == MemberType.METHOD && (returnAnnotation == null || !Serializable.class.isAssignableFrom(returnType))){
                 throw new IllegalArgumentException("A handler method return type must have the DBusType annotation and be Serializable");
             }else if(returnAnnotation != null){
                 ouputSignature = returnAnnotation.signature();

@@ -7,13 +7,14 @@ import fr.viveris.jnidbus.BusType;
 import fr.viveris.jnidbus.Dbus;
 import fr.viveris.jnidbus.bindings.bus.EventLoop;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
-import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.jnidbus.exception.ConnectionException;
-import fr.viveris.jnidbus.message.DbusSignal;
 import fr.viveris.jnidbus.message.Message;
-import fr.viveris.jnidbus.message.Signal;
+import fr.viveris.jnidbus.remote.RemoteInterface;
+import fr.viveris.jnidbus.remote.RemoteMember;
+import fr.viveris.jnidbus.remote.Signal;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.concurrent.CountDownLatch;
@@ -50,7 +51,7 @@ public class SameThreadSignals {
     public void singleThreadSendReceiveEmpty() throws InterruptedException {
         this.handler.latch = new CountDownLatch(EventLoop.SENDING_QUEUE_SIZE);
         for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
-            this.sender.sendSignal(new EmptySignal());
+            this.sender.sendSignal("/Benchmarks/SingleThreadSignals",new SameThreadSignalsRemote.EmptySignal());
         }
         this.handler.latch.await();
     }
@@ -65,7 +66,7 @@ public class SameThreadSignals {
         msg.setString1("string 1");
         msg.setString2("string 2");
         for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
-            this.sender.sendSignal(new SimpleSignal(msg));
+            this.sender.sendSignal("/Benchmarks/SingleThreadSignals",new SameThreadSignalsRemote.SimpleSignal(msg));
         }
         this.handler.latch.await();
     }
@@ -89,7 +90,7 @@ public class SameThreadSignals {
         obj.getObjects().add(sub2);
 
         for(int i = 0; i < EventLoop.SENDING_QUEUE_SIZE; i++){
-            this.sender.sendSignal(new ComplexSignal(obj));
+            this.sender.sendSignal("/Benchmarks/SingleThreadSignals",new SameThreadSignalsRemote.ComplexSignal(obj));
         }
         this.handler.latch.await();
     }
@@ -103,7 +104,7 @@ public class SameThreadSignals {
 
         @HandlerMethod(
                 member = "emptyMessage",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void emptyMessage(Message.EmptyMessage emptyMessage){
             this.latch.countDown();
@@ -111,7 +112,7 @@ public class SameThreadSignals {
 
         @HandlerMethod(
                 member = "complexMessage",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void complexMessage(ArrayRecursiveObject complexMessage){
             this.latch.countDown();
@@ -119,43 +120,36 @@ public class SameThreadSignals {
 
         @HandlerMethod(
                 member = "simpleMessage",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void simpleMessage(SimpleMessage simpleMessage){
             this.latch.countDown();
         }
     }
 
-    @DbusSignal(
-            path = "/Benchmarks/SingleThreadSignals",
-            interfaceName = "Benchmarks.SingleThreadSignals",
-            member = "emptyMessage"
-    )
-    public class EmptySignal extends Signal<Message.EmptyMessage>{
-        public EmptySignal() {
-            super(Message.EMPTY);
-        }
-    }
+    @RemoteInterface("Benchmarks.SingleThreadSignals")
+    public interface SameThreadSignalsRemote{
 
-    @DbusSignal(
-            path = "/Benchmarks/SingleThreadSignals",
-            interfaceName = "Benchmarks.SingleThreadSignals",
-            member = "complexMessage"
-    )
-    public class ComplexSignal extends Signal<ArrayRecursiveObject>{
-        public ComplexSignal(ArrayRecursiveObject msg) {
-            super(msg);
+        @RemoteMember("emptyMessage")
+        class EmptySignal extends Signal<Message.EmptyMessage> {
+            public EmptySignal() {
+                super(Message.EMPTY);
+            }
         }
-    }
 
-    @DbusSignal(
-            path = "/Benchmarks/SingleThreadSignals",
-            interfaceName = "Benchmarks.SingleThreadSignals",
-            member = "simpleMessage"
-    )
-    public class SimpleSignal extends Signal<SimpleMessage>{
-        public SimpleSignal(SimpleMessage msg) {
-            super(msg);
+        @RemoteMember("complexMessage")
+        class ComplexSignal extends Signal<ArrayRecursiveObject>{
+            public ComplexSignal(ArrayRecursiveObject msg) {
+                super(msg);
+            }
         }
+
+        @RemoteMember("simpleMessage")
+        class SimpleSignal extends Signal<SimpleMessage>{
+            public SimpleSignal(SimpleMessage msg) {
+                super(msg);
+            }
+        }
+
     }
 }

@@ -3,12 +3,13 @@ package Signal;
 import Common.DBusTestCase;
 import Common.DBusObjects.SingleStringMessage;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
-import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
-import fr.viveris.jnidbus.message.DbusSignal;
 import fr.viveris.jnidbus.message.Message;
-import fr.viveris.jnidbus.message.Signal;
+import fr.viveris.jnidbus.remote.RemoteInterface;
+import fr.viveris.jnidbus.remote.RemoteMember;
+import fr.viveris.jnidbus.remote.Signal;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -18,13 +19,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class BasicSignalTest extends DBusTestCase {
+
     public static String testString = "test";
 
     @Test
     public void emptySignal() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
         this.receiver.addHandler(handler);
-        this.sender.sendSignal(new EmptySignal());
+        this.sender.sendSignal("/Signal/BasicSignalTest",new BasicSignalTestRemote.EmptySignal());
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
     }
 
@@ -34,7 +36,7 @@ public class BasicSignalTest extends DBusTestCase {
         this.receiver.addHandler(handler);
         SingleStringMessage msg = new SingleStringMessage();
         msg.setString(testString);
-        this.sender.sendSignal(new StringSignalOnWrongEndpoint(msg));
+        this.sender.sendSignal("/Signal/BasicSignalTest",new BasicSignalTestRemote.StringSignalOnWrongEndpoint(msg));
         assertFalse(handler.barrier.await(2, TimeUnit.SECONDS));
     }
 
@@ -44,7 +46,7 @@ public class BasicSignalTest extends DBusTestCase {
         this.receiver.addHandler(handler);
         SingleStringMessage msg = new SingleStringMessage();
         msg.setString(testString);
-        this.sender.sendSignal(new StringSignal(msg));
+        this.sender.sendSignal("/Signal/BasicSignalTest",new BasicSignalTestRemote.StringSignal(msg));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
     }
 
@@ -58,7 +60,7 @@ public class BasicSignalTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "emptySignal",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void emptySignal(Message.EmptyMessage emptyMessage){
             this.barrier.countDown();
@@ -66,7 +68,7 @@ public class BasicSignalTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "stringSignal",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void stringSignal(SingleStringMessage string){
             if(string.getString().equals(BasicSignalTest.testString)){
@@ -75,36 +77,29 @@ public class BasicSignalTest extends DBusTestCase {
         }
     }
 
-    @DbusSignal(
-            path = "/Signal/BasicSignalTest",
-            interfaceName = "Signal.BasicSignalTest",
-            member = "emptySignal"
-    )
-    public static class EmptySignal extends Signal<Message.EmptyMessage>{
-        public EmptySignal() {
-            super(Message.EMPTY);
-        }
-    }
+    @RemoteInterface("Signal.BasicSignalTest")
+    public interface BasicSignalTestRemote{
 
-    @DbusSignal(
-            path = "/Signal/BasicSignalTest",
-            interfaceName = "Signal.BasicSignalTest",
-            member = "emptySignal"
-    )
-    public static class StringSignalOnWrongEndpoint extends Signal<SingleStringMessage>{
-        public StringSignalOnWrongEndpoint(SingleStringMessage msg) {
-            super(msg);
+        @RemoteMember("emptySignal")
+        class EmptySignal extends Signal<Message.EmptyMessage> {
+            public EmptySignal() {
+                super(Message.EMPTY);
+            }
         }
-    }
 
-    @DbusSignal(
-            path = "/Signal/BasicSignalTest",
-            interfaceName = "Signal.BasicSignalTest",
-            member = "stringSignal"
-    )
-    public static class StringSignal extends Signal<SingleStringMessage>{
-        public StringSignal(SingleStringMessage msg) {
-            super(msg);
+        @RemoteMember("wrongEndpoint")
+        class StringSignalOnWrongEndpoint extends Signal<SingleStringMessage>{
+            public StringSignalOnWrongEndpoint(SingleStringMessage msg) {
+                super(msg);
+            }
         }
+
+        @RemoteMember("stringSignal")
+        class StringSignal extends Signal<SingleStringMessage>{
+            public StringSignal(SingleStringMessage msg) {
+                super(msg);
+            }
+        }
+
     }
 }

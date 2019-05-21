@@ -2,7 +2,7 @@ package fr.viveris.jnidbus.dispatching;
 
 import fr.viveris.jnidbus.serialization.Serializable;
 import fr.viveris.jnidbus.message.Message;
-import fr.viveris.jnidbus.serialization.cache.CachedEntity;
+import fr.viveris.jnidbus.cache.MessageMetadata;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -26,12 +26,12 @@ public class HandlerMethod{
     /**
      * cached input type
      */
-    private CachedEntity inputType;
+    private MessageMetadata inputType;
 
     /**
      * cached output type (can be null)
      */
-    private CachedEntity outputType;
+    private MessageMetadata outputType;
 
     /**
      * Return type class
@@ -70,11 +70,11 @@ public class HandlerMethod{
         return this.handlerMethod.invoke(this.handler,param);
     }
 
-    public CachedEntity getInputType() {
+    public MessageMetadata getInputType() {
         return inputType;
     }
 
-    public CachedEntity getOutputType() {
+    public MessageMetadata getOutputType() {
         return outputType;
     }
 }

@@ -111,9 +111,9 @@ public class Dispatcher {
         //generate the criteria from the message
         Criteria requestCriteria;
         if(msgPointer == 0){
-            requestCriteria = new Criteria(member,args.getSignature(),null, HandlerType.SIGNAL);
+            requestCriteria = new Criteria(member,args.getSignature(),null, MemberType.SIGNAL);
         }else{
-            requestCriteria = new Criteria(member,args.getSignature(),null, HandlerType.METHOD);
+            requestCriteria = new Criteria(member,args.getSignature(),null, MemberType.METHOD);
         }
 
         //try to find a matching criteria

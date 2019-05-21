@@ -4,11 +4,12 @@ import Common.DBusTestCase;
 import Common.DBusObjects.CollectionArray;
 import Common.DBusObjects.CollectionOfCollectionArray;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
-import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
-import fr.viveris.jnidbus.message.DbusSignal;
-import fr.viveris.jnidbus.message.Signal;
+import fr.viveris.jnidbus.remote.RemoteInterface;
+import fr.viveris.jnidbus.remote.RemoteMember;
+import fr.viveris.jnidbus.remote.Signal;
 import fr.viveris.jnidbus.serialization.DBusObject;
 import org.junit.Test;
 
@@ -33,7 +34,7 @@ public class ArraySerializationTest extends DBusTestCase {
         assertEquals(0,((Object[])obj.getValues()[0]).length);
 
         //test if JNI code can as well
-        this.sender.sendSignal(new CollectionArraySignal(typeObject));
+        this.sender.sendSignal("/Serialization/ArraySerializationTest",new ArraySerializationTestRemote.CollectionArraySignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         CollectionArray received = handler.collectionArraySignal;
         handler.barrier = new CountDownLatch(1);
@@ -49,7 +50,7 @@ public class ArraySerializationTest extends DBusTestCase {
         assertEquals(42,((Object[])obj.getValues()[0])[0]);
 
         //test if JNI code can as well
-        this.sender.sendSignal(new CollectionArraySignal(typeObject));
+        this.sender.sendSignal("/Serialization/ArraySerializationTest",new ArraySerializationTestRemote.CollectionArraySignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         received = handler.collectionArraySignal;
         handler.barrier = new CountDownLatch(1);
@@ -71,7 +72,7 @@ public class ArraySerializationTest extends DBusTestCase {
         assertEquals(0,((Object[])obj.getValues()[0]).length);
 
         //test JNI code
-        sender.sendSignal(new CollectionOfCollectionArraySignal(typeObject));
+        sender.sendSignal("/Serialization/ArraySerializationTest",new ArraySerializationTestRemote.CollectionOfCollectionArraySignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         CollectionOfCollectionArray received = handler.collectionOfCollectionArraySignal;
         handler.barrier = new CountDownLatch(1);
@@ -91,7 +92,7 @@ public class ArraySerializationTest extends DBusTestCase {
         assertEquals(42,((Object[])recursiveArray[0])[0]);
 
         //test if JNI code can as well
-        this.sender.sendSignal(new CollectionOfCollectionArraySignal(typeObject));
+        this.sender.sendSignal("/Serialization/ArraySerializationTest",new ArraySerializationTestRemote.CollectionOfCollectionArraySignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         received = handler.collectionOfCollectionArraySignal;
         handler.barrier = new CountDownLatch(1);
@@ -114,7 +115,7 @@ public class ArraySerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "collectionArray",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void collectionArray(CollectionArray signal){
             this.collectionArraySignal = signal;
@@ -123,7 +124,7 @@ public class ArraySerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "collectionOfCollectionArraySignal",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void collectionOfCollectionArraySignal(CollectionOfCollectionArray signal){
             this.collectionOfCollectionArraySignal = signal;
@@ -131,25 +132,22 @@ public class ArraySerializationTest extends DBusTestCase {
         }
     }
 
-    @DbusSignal(
-            path = "/Serialization/ArraySerializationTest",
-            interfaceName = "Serialization.ArraySerializationTest",
-            member = "collectionArray"
-    )
-    public static class CollectionArraySignal extends Signal<CollectionArray> {
-        public CollectionArraySignal(CollectionArray msg) {
-            super(msg);
-        }
-    }
+    @RemoteInterface("Serialization.ArraySerializationTest")
+    public interface ArraySerializationTestRemote{
 
-    @DbusSignal(
-            path = "/Serialization/ArraySerializationTest",
-            interfaceName = "Serialization.ArraySerializationTest",
-            member = "collectionOfCollectionArraySignal"
-    )
-    public static class CollectionOfCollectionArraySignal extends Signal<CollectionOfCollectionArray> {
-        public CollectionOfCollectionArraySignal(CollectionOfCollectionArray msg) {
-            super(msg);
+        @RemoteMember("collectionArray")
+        class CollectionArraySignal extends Signal<CollectionArray> {
+            public CollectionArraySignal(CollectionArray msg) {
+                super(msg);
+            }
         }
+
+        @RemoteMember("collectionOfCollectionArraySignal")
+        class CollectionOfCollectionArraySignal extends Signal<CollectionOfCollectionArray> {
+            public CollectionOfCollectionArraySignal(CollectionOfCollectionArray msg) {
+                super(msg);
+            }
+        }
+
     }
 }

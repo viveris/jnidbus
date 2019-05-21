@@ -4,11 +4,12 @@ import Common.DBusTestCase;
 import Common.DBusObjects.ArrayRecursiveObject;
 import Common.DBusObjects.RecursiveObject;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
-import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
-import fr.viveris.jnidbus.message.DbusSignal;
-import fr.viveris.jnidbus.message.Signal;
+import fr.viveris.jnidbus.remote.RemoteInterface;
+import fr.viveris.jnidbus.remote.RemoteMember;
+import fr.viveris.jnidbus.remote.Signal;
 import fr.viveris.jnidbus.serialization.DBusObject;
 import org.junit.Test;
 
@@ -38,7 +39,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
         assertEquals("test2",((DBusObject)obj.getValues()[1]).getValues()[0]);
 
         //send signal, which test JNI and Java unserialization
-        this.sender.sendSignal(new RecursiveObjectSignal(typeObject));
+        this.sender.sendSignal("/Serialization/RecursiveObjectSerializationTest",new RecursiveObjectSerializationTestRemote.RecursiveObjectSignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         RecursiveObject received = handler.recursiveObject;
         assertEquals(42,received.getInteger());
@@ -74,7 +75,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
         assertEquals("asi",subObj2.getSignature());
 
         //send signal, which test JNI and Java unserialization
-        this.sender.sendSignal(new ArrayRecursiveObjectSignal(typeObject));
+        this.sender.sendSignal("/Serialization/RecursiveObjectSerializationTest",new RecursiveObjectSerializationTestRemote.ArrayRecursiveObjectSignal(typeObject));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
         ArrayRecursiveObject received = handler.arrayRecursiveObject;
         assertEquals(2,received.getObjects().size());
@@ -95,7 +96,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "recursiveObject",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void recursiveObject(RecursiveObject signal){
             this.recursiveObject = signal;
@@ -104,7 +105,7 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "arrayRecursiveObject",
-                type = HandlerType.SIGNAL
+                type = MemberType.SIGNAL
         )
         public void arrayRecursiveObject(ArrayRecursiveObject signal){
             this.arrayRecursiveObject = signal;
@@ -112,25 +113,21 @@ public class RecursiveObjectSerializationTest extends DBusTestCase {
         }
     }
 
-    @DbusSignal(
-            path = "/Serialization/RecursiveObjectSerializationTest",
-            interfaceName = "Serialization.RecursiveObjectSerializationTest",
-            member = "recursiveObject"
-    )
-    public static class RecursiveObjectSignal extends Signal<RecursiveObject> {
-        public RecursiveObjectSignal(RecursiveObject msg) {
-            super(msg);
-        }
-    }
+    @RemoteInterface("Serialization.RecursiveObjectSerializationTest")
+    public interface RecursiveObjectSerializationTestRemote{
 
-    @DbusSignal(
-            path = "/Serialization/RecursiveObjectSerializationTest",
-            interfaceName = "Serialization.RecursiveObjectSerializationTest",
-            member = "arrayRecursiveObject"
-    )
-    public static class ArrayRecursiveObjectSignal extends Signal<ArrayRecursiveObject> {
-        public ArrayRecursiveObjectSignal(ArrayRecursiveObject msg) {
-            super(msg);
+        @RemoteMember("recursiveObject")
+        class RecursiveObjectSignal extends Signal<RecursiveObject> {
+            public RecursiveObjectSignal(RecursiveObject msg) {
+                super(msg);
+            }
+        }
+
+        @RemoteMember("arrayRecursiveObject")
+        class ArrayRecursiveObjectSignal extends Signal<ArrayRecursiveObject> {
+            public ArrayRecursiveObjectSignal(ArrayRecursiveObject msg) {
+                super(msg);
+            }
         }
     }
 }

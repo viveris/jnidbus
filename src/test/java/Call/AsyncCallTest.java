@@ -4,10 +4,12 @@ import Common.DBusObjects.SingleStringMessage;
 import Common.DBusTestCase;
 import Common.Listener;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
-import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.jnidbus.message.*;
+import fr.viveris.jnidbus.remote.RemoteInterface;
+import fr.viveris.jnidbus.remote.RemoteMember;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -21,9 +23,12 @@ public class AsyncCallTest extends DBusTestCase {
     public void asyncBlockingCall() throws InterruptedException {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
-        PendingCall<Message.EmptyMessage> pending = this.sender.call(new EmptyCall(this.receiverBusName));
+        AsyncCallTestRemote remoteObj = this.sender.createRemoteObject(this.receiverBusName,"/Call/AsyncCallTest",AsyncCallTestRemote.class);
+
+        PendingCall<Message.EmptyMessage> pending = remoteObj.blockingCall();
         Listener<Message.EmptyMessage> l = new Listener<>();
         pending.setListener(l);
+
         assertTrue(handler.barrier.await(5, TimeUnit.SECONDS));
         assertTrue(l.getBarrier().await(5, TimeUnit.SECONDS));
         assertEquals(Message.EMPTY,l.getValue());
@@ -34,8 +39,10 @@ public class AsyncCallTest extends DBusTestCase {
     public void asyncBlockingCallDoNotBlockEventLoop() throws InterruptedException {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
-        PendingCall<Message.EmptyMessage> pendingEmpty = this.sender.call(new EmptyCall(this.receiverBusName));
-        PendingCall<SingleStringMessage> pendingString = this.sender.call(new AsyncCallTest.StringCall(this.receiverBusName));
+        AsyncCallTestRemote remoteObj = this.sender.createRemoteObject(this.receiverBusName,"/Call/AsyncCallTest",AsyncCallTestRemote.class);
+
+        PendingCall<Message.EmptyMessage> pendingEmpty = remoteObj.blockingCall();
+        PendingCall<SingleStringMessage> pendingString = remoteObj.instantCall();
         Listener<Message.EmptyMessage> lEmpty = new Listener<>();
         Listener<SingleStringMessage> lString = new Listener<>();
         pendingEmpty.setListener(lEmpty);
@@ -56,7 +63,7 @@ public class AsyncCallTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "blockingCall",
-                type = HandlerType.METHOD
+                type = MemberType.METHOD
         )
         public Promise<Message.EmptyMessage> blockingCall(Message.EmptyMessage emptyMessage){
             final Promise<Message.EmptyMessage> promise = new Promise<>();
@@ -79,7 +86,7 @@ public class AsyncCallTest extends DBusTestCase {
 
         @HandlerMethod(
                 member = "instantReturn",
-                type = HandlerType.METHOD
+                type = MemberType.METHOD
         )
         public Promise<SingleStringMessage> instantReturn(Message.EmptyMessage msg){
             Boolean b = true;
@@ -92,45 +99,12 @@ public class AsyncCallTest extends DBusTestCase {
         }
     }
 
-    @DbusMethodCall(
-            //as destination is dynamic, we override the getDestination method instead of using the annotation
-            destination = "",
-            path = "/Call/AsyncCallTest",
-            interfaceName = "Call.AsyncCallTest",
-            member = "blockingCall"
+    @RemoteInterface("Call.AsyncCallTest")
+    public interface AsyncCallTestRemote{
+        @RemoteMember("blockingCall")
+        PendingCall<Message.EmptyMessage> blockingCall();
 
-    )
-    public static class EmptyCall extends Call<Message.EmptyMessage,Message.EmptyMessage> {
-        private String dest;
-        public EmptyCall(String dest) {
-            super(Message.EMPTY,Message.EmptyMessage.class);
-            this.dest = dest;
-        }
-
-        @Override
-        public String getDestination() {
-            return this.dest;
-        }
-    }
-
-    @DbusMethodCall(
-            //as destination is dynamic, we override the getDestination method instead of using the annotation
-            destination = "",
-            path = "/Call/AsyncCallTest",
-            interfaceName = "Call.AsyncCallTest",
-            member = "instantReturn"
-
-    )
-    public static class StringCall extends Call<Message.EmptyMessage, SingleStringMessage> {
-        private String dest;
-        public StringCall(String dest) {
-            super(Message.EMPTY, SingleStringMessage.class);
-            this.dest = dest;
-        }
-
-        @Override
-        public String getDestination() {
-            return this.dest;
-        }
+        @RemoteMember("instantReturn")
+        PendingCall<SingleStringMessage> instantCall();
     }
 }

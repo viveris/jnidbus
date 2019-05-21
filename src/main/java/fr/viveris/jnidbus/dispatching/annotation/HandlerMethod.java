@@ -1,6 +1,6 @@
 package fr.viveris.jnidbus.dispatching.annotation;
 
-import fr.viveris.jnidbus.dispatching.HandlerType;
+import fr.viveris.jnidbus.dispatching.MemberType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,5 +15,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface HandlerMethod {
     String member();
-    HandlerType type();
+    MemberType type();
 }
