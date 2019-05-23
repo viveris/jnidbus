@@ -56,18 +56,20 @@ public abstract class Message implements Serializable {
             try{
                 //retrieve the getter from the cache
                 Method getter = messageMetadata.getGetter(fieldName);
+                Object returnValue = getter.invoke(this);
+                if(returnValue == null) throw new NullPointerException("A DBus value can not be nullable");
 
                 if(element.isPrimitive()){
                     //primitive types don't need any kind of processing
-                    values[i] = getter.invoke(this);
+                    values[i] = returnValue;
                 }else if(element.isArray()){
                     //we can directly cas as List as the cached entity checked this when created then serialize it
-                    List value = (List) getter.invoke(this);
+                    List value = (List) returnValue;
                     values[i] = Message.serializeList(value,element,((ParameterizedType)getter.getGenericReturnType()).getActualTypeArguments()[0]);
 
                 }else if(element.isObject()){
                     //recursively serialize
-                    values[i] = ((Serializable)getter.invoke(this)).serialize();
+                    values[i] = ((Serializable)returnValue).serialize();
                 }else{
                     throw new IllegalStateException("Unknown type detected: "+element.toString());
                 }

@@ -12,6 +12,8 @@ import fr.viveris.jnidbus.exception.ConnectionException;
 import fr.viveris.jnidbus.message.sendingrequest.SignalSendingRequest;
 import fr.viveris.jnidbus.remote.RemoteObjectInterceptor;
 import fr.viveris.jnidbus.remote.Signal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -20,11 +22,22 @@ import java.util.HashMap;
  * Public API of the library. contains all the primitives to interact with Dbus.
  */
 public class Dbus implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(Dbus.class);
     /**
      * First of all, load the JNI library
      */
     static{
-        System.loadLibrary("jnidbus");
+        //when running in a tomcat env, it is advised to use the Library.loadLibrary method to allow multiple webapp
+        //to use the shared library without any overhead for the developer, but we don't want to make tomcat a dependency
+        //of the library, so we use reflection to detect if we have the ability to load the library with tomcat
+        try {
+            Class<?> clazz = Dbus.class.getClassLoader().loadClass("org.apache.tomcat.jni.Library");
+            LOG.debug("Tomcat detected, trying to use tomcat-jni to load shared library");
+            clazz.getDeclaredMethod("loadLibrary",String.class).invoke("jnidbus");
+        } catch (Exception e) {
+            LOG.info("Loading shared library using System.loadLibrary()");
+            System.loadLibrary("jnidbus");
+        }
     }
 
     /**
@@ -53,6 +66,7 @@ public class Dbus implements AutoCloseable {
         this.connection = Connection.createConnection(type,busName);
         this.eventLoop = new EventLoop(this.connection);
         this.dispatchers = new HashMap<>();
+        LOG.info("DBus successfully connected and bound to the bus {} ",busName);
     }
 
     /**
@@ -64,6 +78,7 @@ public class Dbus implements AutoCloseable {
      * @param handler handler to register
      */
     public void addHandler(GenericHandler handler){
+        LOG.info("Adding DBus handler {}",handler.getClass().getName());
         //get annotation
         Handler handlerAnnotation = handler.getClass().getAnnotation(Handler.class);
         if(handlerAnnotation == null) throw new IllegalStateException("The given handler does not have the Handler annotation");
@@ -75,17 +90,20 @@ public class Dbus implements AutoCloseable {
         Dispatcher dispatcher = this.dispatchers.get(handlerAnnotation.path());
         boolean dispatcherCreated = false;
         if(dispatcher == null){
+            LOG.debug("No dispatcher found for the given object path, creating one");
             dispatcher = new Dispatcher(handlerAnnotation.path(),this.eventLoop);
             dispatcherCreated = true;
         }
 
         //put the criteria in the dispatcher
         for(Criteria c : criterias.keySet()){
+            LOG.debug("Adding criteria for {}.{}({}) to dispatcher",handlerAnnotation.interfaceName(),c.getMember(),c.getInputSignature());
             dispatcher.addCriteria(handlerAnnotation.interfaceName(),c,criterias.get(c));
         }
 
         //if the dispatcher was created, register it to Dbus a block until it is effectively registered
         if(dispatcherCreated){
+            LOG.debug("Adding dispatcher to event loop and register object path {}",handlerAnnotation.path());
             this.eventLoop.addPathHandler(dispatcher);
             try {
                 dispatcher.awaitRegistration();
@@ -111,7 +129,7 @@ public class Dbus implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public <T> T createRemoteObject(String destinationBus, String objectPath, Class<T> objectInterface){
-        return (T) Proxy.newProxyInstance(this.getClass().getClassLoader(),new Class[]{objectInterface},new RemoteObjectInterceptor(destinationBus,objectPath,objectInterface,this.eventLoop));
+        return (T) Proxy.newProxyInstance(objectInterface.getClassLoader(),new Class[]{objectInterface},new RemoteObjectInterceptor(destinationBus,objectPath,objectInterface,this.eventLoop));
     }
 
     public void sendSignal(String objectPath, Signal signal){
@@ -122,6 +140,7 @@ public class Dbus implements AutoCloseable {
 
     @Override
     public void close() throws Exception {
+        LOG.info("Closing DBus connection and unregister bus name {}",this.connection.getBusName());
         this.eventLoop.close();
     }
 }

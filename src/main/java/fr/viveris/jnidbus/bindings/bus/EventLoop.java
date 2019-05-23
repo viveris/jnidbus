@@ -7,6 +7,8 @@ import fr.viveris.jnidbus.exception.EventLoopSetupException;
 import fr.viveris.jnidbus.message.PendingCall;
 import fr.viveris.jnidbus.message.sendingrequest.*;
 import fr.viveris.jnidbus.serialization.DBusObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * the underlying DBus connection as we want to make sure all the pending events are processed before closing.
  */
 public class EventLoop implements Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(EventLoop.class);
     /**
      * Limit the number of send by tick to avoid event loop stall
      */
@@ -97,15 +100,18 @@ public class EventLoop implements Closeable {
     public EventLoop(Connection connection){
         this.connection = connection;
         this.dBusContextPointer = connection.getDbusContextPointer();
+        LOG.debug("Starting DBus event loop for bus {}",this.connection.getBusName());
         this.thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     EventLoop.this.run();
                 } catch (EventLoopSetupException e) {
+                    LOG.error("Exception in event loop {} : ",EventLoop.this.connection.getBusName(),e);
                     EventLoop.this.setupException = e;
                     EventLoop.this.isClosed.set(true);
                     EventLoop.this.startBarrier.countDown();
+                    EventLoop.this.connection.close();
                 }
             }
         });
@@ -208,6 +214,8 @@ public class EventLoop implements Closeable {
         this.isClosed.set(false);
         this.startBarrier.countDown();
 
+        LOG.debug("Event loop {} successfully started",this.connection.getBusName());
+
         //tick while the event loop is valid
         while(!this.isClosed.get()){
             //from now messages added to the queue by other threads may or may not be added before the tick() call, so we
@@ -220,6 +228,7 @@ public class EventLoop implements Closeable {
                 this.addPathHandler(this.dBusContextPointer,d.getPath(),d);
                 //notify the dispatcher it has been registered
                 d.setAsRegistered();
+                LOG.debug("Event loop {} successfully registered the dispatcher for the path {}",this.connection.getBusName(),d.getPath());
             }
 
             //execute redispatch requests
@@ -229,13 +238,15 @@ public class EventLoop implements Closeable {
 
             int i = 0;
             while(!this.signalSendingQueue.isEmpty() && i< MAX_SEND_PER_TICK){
-                AbstractSendingRequest abstarctRequest = this.signalSendingQueue.poll();
-                if(abstarctRequest instanceof CallSendingRequest){
-                    CallSendingRequest req = (CallSendingRequest)abstarctRequest;
+                AbstractSendingRequest abstractRequest = this.signalSendingQueue.poll();
+                if(abstractRequest instanceof CallSendingRequest){
+                    CallSendingRequest req = (CallSendingRequest)abstractRequest;
+                    LOG.debug("Sending DBus call {}.{}({}) on path {} for the bus {}",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature(),req.getPath(),req.getDest());
                     this.sendCall(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage(),req.getDest(),req.getPendingCall());
 
-                }else if(abstarctRequest instanceof ErrorReplySendingRequest){
-                    ErrorReplySendingRequest req = (ErrorReplySendingRequest)abstarctRequest;
+                }else if(abstractRequest instanceof ErrorReplySendingRequest){
+                    ErrorReplySendingRequest req = (ErrorReplySendingRequest)abstractRequest;
+                    LOG.debug("Sending DBus error {}",req.getError().toString());
                     if(req.getError() instanceof DBusException){
                         DBusException cast = (DBusException)req.getError();
                         this.sendReplyError(this.dBusContextPointer,req.getMessagePointer(),cast.getCode(),cast.getMessage());
@@ -243,12 +254,13 @@ public class EventLoop implements Closeable {
                         this.sendReplyError(this.dBusContextPointer,req.getMessagePointer(),req.getError().getClass().getName(),req.getError().getMessage());
                     }
 
-                }else if(abstarctRequest instanceof ReplySendingRequest){
-                    ReplySendingRequest req = (ReplySendingRequest)abstarctRequest;
+                }else if(abstractRequest instanceof ReplySendingRequest){
+                    ReplySendingRequest req = (ReplySendingRequest)abstractRequest;
+                    LOG.debug("Sending DBus call {}.{}({}) on path {} for the bus {}",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature(),req.getPath(),req.getDest());
                     this.sendReply(this.dBusContextPointer,req.getMessage(),req.getMessagePointer());
 
-                }else if(abstarctRequest instanceof SignalSendingRequest){
-                    SignalSendingRequest req = (SignalSendingRequest)abstarctRequest;
+                }else if(abstractRequest instanceof SignalSendingRequest){
+                    SignalSendingRequest req = (SignalSendingRequest)abstractRequest;
                     this.sendSignal(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage());
                 }
                 i++;

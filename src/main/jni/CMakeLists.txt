@@ -23,9 +23,10 @@ include_directories(${DBUS_INCLUDE_DIRS})
 link_directories(${DBUS_LIBRARY_DIRS})
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+#set (DEFAULT_LIBS "-static-libstdc++")
 
 file (GLOB SOURCES src/headers/*.h src/*.cpp)
 
 
 add_library(jnidbus SHARED ${SOURCES})
-target_link_libraries(jnidbus ${DBUS_LIBRARIES})
+target_link_libraries(jnidbus ${DBUS_LIBRARIES} -static-libstdc++)

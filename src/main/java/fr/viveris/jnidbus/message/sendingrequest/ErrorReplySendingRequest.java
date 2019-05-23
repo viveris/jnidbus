@@ -7,10 +7,18 @@ public class ErrorReplySendingRequest extends AbstractSendingRequest {
     private Throwable error;
     private long messagePointer;
 
-    public ErrorReplySendingRequest(Throwable error, long messagePointer) {
+    /**
+     * For debug purposes
+     */
+    private String interfaceName;
+    private String member;
+
+    public ErrorReplySendingRequest(Throwable error, long messagePointer, String interfaceName, String member) {
         super(null);
         this.error = error;
         this.messagePointer = messagePointer;
+        this.interfaceName = interfaceName;
+        this.member = member;
     }
 
     public Throwable getError() {
@@ -19,5 +27,13 @@ public class ErrorReplySendingRequest extends AbstractSendingRequest {
 
     public long getMessagePointer() {
         return messagePointer;
+    }
+
+    public String getInterfaceName() {
+        return interfaceName;
+    }
+
+    public String getMember() {
+        return member;
     }
 }

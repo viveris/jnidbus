@@ -5,10 +5,13 @@ import fr.viveris.jnidbus.Dbus;
 import fr.viveris.jnidbus.exception.ConnectionException;
 import org.junit.After;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 
 public abstract class DBusTestCase {
+    private static final Logger LOG = LoggerFactory.getLogger(DBusTestCase.class);
     protected Dbus sender;
     protected Dbus receiver;
 
@@ -21,8 +24,9 @@ public abstract class DBusTestCase {
      */
     @Before
     public void setup() throws ConnectionException {
+        LOG.info("----------- Start Test Case -----------");
         this.senderBusName = "fr.viveris.vizada.jnidbus.test.sender."+generateRandomString();
-        this.receiverBusName = "fr.viveris.vizada.jnidbus.test.sender."+generateRandomString();
+        this.receiverBusName = "fr.viveris.vizada.jnidbus.test.receiver."+generateRandomString();
         this.sender = new Dbus(BusType.SESSION,this.senderBusName);
         this.receiver = new Dbus(BusType.SESSION,this.receiverBusName);
     }
@@ -32,6 +36,7 @@ public abstract class DBusTestCase {
         try{
             this.sender.close();
             this.receiver.close();
+            LOG.info("----------- End Test Case -----------");
         }catch (Exception e){ }
     }
 
