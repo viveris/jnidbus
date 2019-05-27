@@ -246,7 +246,7 @@ public class EventLoop implements Closeable {
 
                 }else if(abstractRequest instanceof ErrorReplySendingRequest){
                     ErrorReplySendingRequest req = (ErrorReplySendingRequest)abstractRequest;
-                    LOG.debug("Sending DBus error {}",req.getError().toString());
+                    LOG.debug("Sending DBus error {} thrown form {}.{}",req.getError().toString(),req.getInterfaceName(),req.getMember());
                     if(req.getError() instanceof DBusException){
                         DBusException cast = (DBusException)req.getError();
                         this.sendReplyError(this.dBusContextPointer,req.getMessagePointer(),cast.getCode(),cast.getMessage());
@@ -256,11 +256,12 @@ public class EventLoop implements Closeable {
 
                 }else if(abstractRequest instanceof ReplySendingRequest){
                     ReplySendingRequest req = (ReplySendingRequest)abstractRequest;
-                    LOG.debug("Sending DBus call {}.{}({}) on path {} for the bus {}",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature(),req.getPath(),req.getDest());
+                    LOG.debug("Sending DBus reply form {}.{}({})",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature());
                     this.sendReply(this.dBusContextPointer,req.getMessage(),req.getMessagePointer());
 
                 }else if(abstractRequest instanceof SignalSendingRequest){
                     SignalSendingRequest req = (SignalSendingRequest)abstractRequest;
+                    LOG.debug("Sending DBus signal {}.{}({}) on path {}",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature(),req.getPath());
                     this.sendSignal(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage());
                 }
                 i++;

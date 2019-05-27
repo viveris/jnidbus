@@ -33,6 +33,12 @@ public class Promise<T extends Serializable> {
      */
     private DBusException error;
 
+    /**
+     * For debug purposes
+     */
+    private String interfaceName;
+    private String member;
+
     public void resolve(T result){
         this.result = result;
         if(msgPointer.compareAndSet(0,1)){
@@ -52,8 +58,10 @@ public class Promise<T extends Serializable> {
         }
     }
 
-    public void setMessagePointer(long ptr, EventLoop eventLoop){
+    public void setMessagePointer(long ptr, String interfaceName, String member, EventLoop eventLoop){
         this.eventLoop = eventLoop;
+        this.interfaceName = interfaceName;
+        this.member = member;
         //if there is already a result, dispatch
         if(this.msgPointer.compareAndSet(0,ptr)){
             //don't dispatch, result is not here yet
@@ -66,9 +74,9 @@ public class Promise<T extends Serializable> {
 
     private void dispatch(boolean error){
         if(error){
-            this.eventLoop.send(new ErrorReplySendingRequest(this.error,this.msgPointer.get()));
+            this.eventLoop.send(new ErrorReplySendingRequest(this.error,this.msgPointer.get(),this.interfaceName,this.member));
         }else{
-            this.eventLoop.send(new ReplySendingRequest(this.result.serialize(),this.msgPointer.get()));
+            this.eventLoop.send(new ReplySendingRequest(this.result.serialize(),this.msgPointer.get(),this.interfaceName,this.member));
         }
     }
 

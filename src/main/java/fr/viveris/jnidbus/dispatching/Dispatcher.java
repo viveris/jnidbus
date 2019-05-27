@@ -7,6 +7,8 @@ import fr.viveris.jnidbus.message.sendingrequest.ErrorReplySendingRequest;
 import fr.viveris.jnidbus.message.sendingrequest.ReplySendingRequest;
 import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.serialization.Serializable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +26,8 @@ import java.util.concurrent.CountDownLatch;
  * block until the dispatcher is effectively registered.
  */
 public class Dispatcher {
+    private static final Logger LOG = LoggerFactory.getLogger(Dispatcher.class);
+
     /**
      * Is the dispatcher effectively registered to dbus, or is it waiting to be
      */
@@ -104,6 +108,7 @@ public class Dispatcher {
      * @return
      */
     public boolean dispatch(DBusObject args, String interfaceName, String member, long msgPointer) {
+        LOG.debug("Dispatcher {} received a message for {}.{}({})",this.path,interfaceName,member,args.getSignature());
         //get the list of criteria for the given interface and return false if nothing is found
         ArrayList<Criteria> availableHandlers = this.handlersCriterias.get(interfaceName);
         if(availableHandlers == null) return false;
@@ -119,6 +124,7 @@ public class Dispatcher {
         //try to find a matching criteria
         for(Criteria c: availableHandlers){
             if(c.equals(requestCriteria)){
+                LOG.debug("Dispatcher found a handler, trying to unserialize");
                 //match found, try to unserialize
                 HandlerMethod handler = this.handlers.get(c);
                 try{
@@ -134,21 +140,23 @@ public class Dispatcher {
                     Object returnObject = handler.call(param);
                     if(returnObject != null && msgPointer != 0){
                         if(returnObject instanceof Message){
-                            this.eventLoop.send(new ReplySendingRequest(((Message)returnObject).serialize(),msgPointer));
+                            LOG.debug("Handler returned a result, dispatch the reply: {}",returnObject.toString());
+                            this.eventLoop.send(new ReplySendingRequest(((Message)returnObject).serialize(),msgPointer,interfaceName,member));
                         }else if(returnObject instanceof Promise){
-                            ((Promise) returnObject).setMessagePointer(msgPointer,this.eventLoop);
+                            LOG.debug("Handler returned a promise, set the message pointer and proceed");
+                            ((Promise) returnObject).setMessagePointer(msgPointer,interfaceName,member,this.eventLoop);
                         }else{
-                            //TODO: log error, invalid return type
+                            LOG.error("The handler returned an unknown result ({}), no reply will be sent",returnObject);
                         }
                     }else if(msgPointer != 0){
-                        //TODO: log an error as the reply from the call was null, an error should have been thrown instead
+                        LOG.error("The handler returned a null object, no reply will be sent");
                     }
                 }catch (Exception e){
                     //if the message is a call, reply an error
                     if(msgPointer != 0){
-                        this.eventLoop.send(new ErrorReplySendingRequest(e.getCause(),msgPointer));
+                        this.eventLoop.send(new ErrorReplySendingRequest(e.getCause(),msgPointer, interfaceName, member));
                     }else{
-                        //TODO: log error
+                        LOG.warn("An exception was raised during signal handling",e);
                     }
                 }
                 return true;

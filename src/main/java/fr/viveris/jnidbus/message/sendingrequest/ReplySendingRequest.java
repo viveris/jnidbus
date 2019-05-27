@@ -8,12 +8,28 @@ import fr.viveris.jnidbus.serialization.DBusObject;
 public class ReplySendingRequest extends AbstractSendingRequest {
     long messagePointer;
 
-    public ReplySendingRequest(DBusObject message, long messagePointer) {
+    /**
+     * For debug purposes
+     */
+    private String interfaceName;
+    private String member;
+
+    public ReplySendingRequest(DBusObject message, long messagePointer, String interfaceName, String member) {
         super(message);
         this.messagePointer = messagePointer;
+        this.interfaceName = interfaceName;
+        this.member = member;
     }
 
     public long getMessagePointer() {
         return messagePointer;
+    }
+
+    public String getInterfaceName() {
+        return interfaceName;
+    }
+
+    public String getMember() {
+        return member;
     }
 }
