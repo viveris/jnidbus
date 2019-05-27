@@ -10,10 +10,10 @@ extern "C" {
 /*
  * Class:     fr_viveris_jnidbus_bindings_bus_Connection
  * Method:    createConnection
- * Signature: (Lfr/viveris/jnidbus/BusType;Ljava/lang/String;)Lfr/viveris/jnidbus/bindings/bus/Connection;
+ * Signature: (Lfr/viveris/jnidbus/BusType;Ljava/lang/String;Ljava/lang/String;)Lfr/viveris/jnidbus/bindings/bus/Connection;
  */
 JNIEXPORT jobject JNICALL Java_fr_viveris_jnidbus_bindings_bus_Connection_createConnection
-  (JNIEnv *, jclass, jobject, jstring);
+  (JNIEnv *, jclass, jobject, jstring, jstring);
 
 /*
  * Class:     fr_viveris_jnidbus_bindings_bus_Connection

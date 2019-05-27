@@ -30,11 +30,12 @@ public class Connection {
     }
 
     /**
-     * Create a DBus connection on the desired bus
+     * Create a DBus connection on the desired bus. the address is nullable and if it is set to null, dbus will sue the
+     * DBUS_SESSION_BUS_ADDRESS environment variable
      * @param type
      * @return
      */
-    public static native Connection createConnection(BusType type, String busName) throws ConnectionException;
+    public static native Connection createConnection(BusType type, String busName, String busAddress) throws ConnectionException;
 
     /**
      * Closes the native context and DBus connection freeing all memory and releasing the registered bus name

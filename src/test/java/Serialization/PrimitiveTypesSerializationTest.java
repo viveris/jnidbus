@@ -3,6 +3,7 @@ package Serialization;
 import Common.DBusObjects.primitives.*;
 import Common.DBusTestCase;
 import Common.handlers.*;
+import fr.viveris.jnidbus.serialization.DBusObject;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -35,6 +36,7 @@ public class PrimitiveTypesSerializationTest extends DBusTestCase {
         msg.setPrimitive(true);
         msg.setBoxed(false);
         msg.setList(Arrays.asList(true));
+        DBusObject obj = msg.serialize();
         this.sender.sendSignal("/handlers/primitive/boolean",new BooleanHandler.BooleanHandlerRemote.BooleanSignal(msg));
         assertTrue(handler.getBarrier().await(2, TimeUnit.SECONDS));
         assertTrue(handler.getValue().getPrimitive());

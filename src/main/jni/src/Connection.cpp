@@ -18,7 +18,7 @@ using namespace std;
  * Signature: (Lfr/viveris/jnidbus/BusType;)Lfr/viveris/jnidbus/bindings/bus/Connection;
  */
 JNIEXPORT jobject JNICALL Java_fr_viveris_jnidbus_bindings_bus_Connection_createConnection
-  (JNIEnv * env, jclass target, jobject busType, jstring busName){
+  (JNIEnv * env, jclass target, jobject busType, jstring busName, jstring bus_address){
       //init context
       context* ctx = new context;
       env->GetJavaVM(&ctx->vm);
@@ -46,7 +46,16 @@ JNIEXPORT jobject JNICALL Java_fr_viveris_jnidbus_bindings_bus_Connection_create
       dbus_error_init(&err);
 
       DBusConnection* conn;
-      conn = dbus_bus_get_private(type, &err);
+
+      if(bus_address == NULL){
+         conn = dbus_bus_get_private(type, &err);
+      }else{
+         const char* bus_address_native = env->GetStringUTFChars(bus_address, 0);
+         conn = dbus_connection_open_private(bus_address_native, &err);
+         dbus_bus_register(conn,&err);
+         env->ReleaseStringUTFChars(bus_address, bus_address_native);
+      }
+      
       if (dbus_error_is_set(&err)) { 
          env->ThrowNew(find_class(ctx,"fr/viveris/jnidbus/exception/ConnectionException"),err.message);
          dbus_error_free(&err); 

@@ -265,7 +265,7 @@ void serialize_element(context* ctx, int dbus_type, jobject object, DBusMessageI
         }
         case DBUS_TYPE_BOOLEAN:
         {
-            jboolean valueNative = env->CallBooleanMethod(object,find_method(ctx,"java/lang/Boolean","booleanValue","()Z"));
+            int valueNative = (int) env->CallBooleanMethod(object,find_method(ctx,"java/lang/Boolean","booleanValue","()Z"));
             dbus_message_iter_append_basic(container,DBUS_TYPE_BOOLEAN,&valueNative);
             break;
         }
@@ -327,6 +327,7 @@ jobject unserialize_element(context* ctx, DBusMessageIter* container){
             jclass integerClass = find_class(ctx,"java/lang/Integer");
             jmethodID constructor = find_method(ctx,"java/lang/Integer","<init>","(I)V");
             return env->NewObject(integerClass,constructor,value);
+            break;
         }
         case DBUS_TYPE_BOOLEAN:
         {

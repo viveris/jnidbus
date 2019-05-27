@@ -1,4 +1,5 @@
 .idea
-target
+build
+.gradle
 *.iml
 *.so

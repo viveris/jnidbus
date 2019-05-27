@@ -62,11 +62,15 @@ public class Dbus implements AutoCloseable {
      * @param busName bus name, should respect the Dbus name format (similar to the java namespace format)
      * @throws ConnectionException thrown id something goes wrong with dbus (bus name already in used, bus unavailable, etc...)
      */
-    public Dbus(BusType type, String busName) throws ConnectionException {
-        this.connection = Connection.createConnection(type,busName);
+    public Dbus(BusType type, String busName,String busAddress) throws ConnectionException {
+        this.connection = Connection.createConnection(type,busName,busAddress);
         this.eventLoop = new EventLoop(this.connection);
         this.dispatchers = new HashMap<>();
         LOG.info("DBus successfully connected and bound to the bus {} ",busName);
+    }
+
+    public Dbus(BusType type, String busName) throws ConnectionException {
+        new Dbus(type,busName,null);
     }
 
     /**

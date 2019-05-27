@@ -1,4 +1,4 @@
-package benchmarks;
+package fr.viveris;
 
 import Common.DBusObjects.ArrayRecursiveObject;
 import Common.DBusObjects.SimpleMessage;
@@ -33,7 +33,7 @@ public class SameThreadSignals {
     public SameThreadSignals(){
         this.busName = "fr.viveris.vizada.jnidbus.benchmarks.SingleThreadSignals."+ DBusTestCase.generateRandomString();
         try {
-            this.sender = new Dbus(BusType.SESSION,this.busName);
+            this.sender = new Dbus(BusType.SESSION,this.busName,System.getProperty("dbus.busPath"));
             this.handler = new SignalHandler();
             sender.addHandler(this.handler);
         } catch (ConnectionException e) {

@@ -1,0 +1,45 @@
+plugins {
+    id "me.champeau.gradle.jmh" version "0.4.8"
+}
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+version '0.2.1'
+
+// Set up dependencies.
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-api:1.7.26'
+    testCompile 'junit:junit:4.12'
+
+    //jmh deps
+    jmh 'org.openjdk.jmh:jmh-core:1.21'
+    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+}
+
+// Limit JUnit tests to classes ending in 'Test'.
+test {
+    include '**/*Test.class'
+}
+
+//add JNI library path for JMH and tests
+test {
+    jvmArgs "-Djava.library.path=${project.projectDir}/src/main/resources"
+}
+jmh{
+    String dbus_bus_path = System.getenv().get("DBUS_SESSION_BUS_ADDRESS")
+    jvmArgs = ['-Djava.library.path='+project.projectDir+'/src/main/resources','-Ddbus.busPath='+dbus_bus_path+'']
+}
+
+//add task for JNI code compilation
+task compileJNI(type: Exec) {
+    workingDir project.projectDir
+    commandLine "${project.projectDir}/src/scripts/compileJNI.sh"
+}
+test.dependsOn compileJNI
