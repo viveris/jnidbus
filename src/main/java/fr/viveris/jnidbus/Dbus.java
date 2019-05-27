@@ -70,7 +70,7 @@ public class Dbus implements AutoCloseable {
     }
 
     public Dbus(BusType type, String busName) throws ConnectionException {
-        new Dbus(type,busName,null);
+        this(type,busName,null);
     }
 
     /**
