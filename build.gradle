@@ -4,10 +4,10 @@ plugins {
 
 apply plugin: 'java'
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = java_version
+targetCompatibility = java_version
 
-version '0.2.1'
+version jnidbus_version
 
 // Set up dependencies.
 repositories {
@@ -15,12 +15,13 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.slf4j:slf4j-api:1.7.26'
-    testCompile 'junit:junit:4.12'
+    implementation "org.slf4j:slf4j-api:$slf4j_version"
 
-    //jmh deps
-    jmh 'org.openjdk.jmh:jmh-core:1.21'
-    jmh 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    testCompile "junit:junit:$junit_version"
+    testCompile "ch.qos.logback:logback-classic:$logback_version"
+
+    jmh "org.openjdk.jmh:jmh-core:$jmh_version"
+    jmh "org.openjdk.jmh:jmh-generator-annprocess:$jmh_version"
 }
 
 // Limit JUnit tests to classes ending in 'Test'.
@@ -31,10 +32,16 @@ test {
 //add JNI library path for JMH and tests
 test {
     jvmArgs "-Djava.library.path=${project.projectDir}/src/main/resources"
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
 jmh{
+    //the JMH gradle plugin do not pass env variable around when forking, so we set a Java parameter containing the env variable
+    //and use it from the benchmark code
     String dbus_bus_path = System.getenv().get("DBUS_SESSION_BUS_ADDRESS")
     jvmArgs = ['-Djava.library.path='+project.projectDir+'/src/main/resources','-Ddbus.busPath='+dbus_bus_path+'']
+    jmhVersion jmh_version
 }
 
 //add task for JNI code compilation
@@ -43,3 +50,6 @@ task compileJNI(type: Exec) {
     commandLine "${project.projectDir}/src/scripts/compileJNI.sh"
 }
 test.dependsOn compileJNI
+
+//force gradle to run test each times
+test.outputs.upToDateWhen {false}
