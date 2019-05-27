@@ -33,7 +33,7 @@ test {
 test {
     jvmArgs "-Djava.library.path=${project.projectDir}/src/main/resources"
     testLogging {
-        events "passed", "skipped", "failed"
+        events "failed"
     }
 }
 jmh{
@@ -53,3 +53,8 @@ test.dependsOn compileJNI
 
 //force gradle to run test each times
 test.outputs.upToDateWhen {false}
+
+//enable parallel tests
+tasks.withType(Test) {
+    maxParallelForks = 4
+}
