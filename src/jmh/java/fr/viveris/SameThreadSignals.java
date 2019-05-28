@@ -58,21 +58,6 @@ public class SameThreadSignals {
 
     @Benchmark
     @OperationsPerInvocation(EventLoop.MAX_SEND_PER_TICK)
-    public void singleThreadSendReceiveSimple() throws InterruptedException {
-        this.handler.latch = new CountDownLatch(EventLoop.MAX_SEND_PER_TICK);
-        SimpleMessage msg = new SimpleMessage();
-        msg.setInt1(45000);
-        msg.setInt2(684000);
-        msg.setString1("string 1");
-        msg.setString2("string 2");
-        for(int i = 0; i < EventLoop.MAX_SEND_PER_TICK; i++){
-            this.sender.sendSignal("/Benchmarks/SingleThreadSignals",new SameThreadSignalsRemote.SimpleSignal(msg));
-        }
-        this.handler.latch.await();
-    }
-
-    @Benchmark
-    @OperationsPerInvocation(EventLoop.MAX_SEND_PER_TICK)
     public void singleThreadSendReceiveComplex() throws InterruptedException {
         this.handler.latch = new CountDownLatch(EventLoop.MAX_SEND_PER_TICK);
 

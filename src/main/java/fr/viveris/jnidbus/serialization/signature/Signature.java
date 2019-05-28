@@ -1,11 +1,14 @@
 package fr.viveris.jnidbus.serialization.signature;
 
+import fr.viveris.jnidbus.cache.Cache;
+
 import java.util.Iterator;
 
 /**
  * The Signature object allows the developer to parse and explore DBus signature in a proper iterator-oriented way.
  */
 public class Signature implements Iterable<SignatureElement>{
+    private static final Cache<String,CachedSignatureIterator> CACHE = new Cache<>();
     /**
      * Dbus signature string
      */
@@ -17,7 +20,12 @@ public class Signature implements Iterable<SignatureElement>{
 
     @Override
     public Iterator<SignatureElement> iterator() {
-        return new SignatureIterator(this.signature);
+        CachedSignatureIterator iter = CACHE.getCachedEntity(this.signature);
+        if(iter == null){
+            iter = new CachedSignatureIterator(this.signature);
+            CACHE.addCachedEntity(this.signature, iter);
+        }
+        return iter.iterator();
     }
 
     public String getSignature() {
@@ -31,6 +39,6 @@ public class Signature implements Iterable<SignatureElement>{
      * @return the first SignatureElement of this signature
      */
     public SignatureElement getFirst(){
-        return new SignatureIterator(this.signature).next();
+        return this.iterator().next();
     }
 }
