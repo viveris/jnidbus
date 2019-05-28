@@ -20,6 +20,7 @@ import fr.viveris.jnidbus.serialization.Serializable;
  * @param <T> return type of the call
  */
 public class PendingCall<T extends Serializable> {
+    public static final String PENDING_CALL_CANCELLED_ERROR_CODE = "fr.viveris.vizada.jnidbus.cancelled";
     /**
      * Event loop on which we should dispatch execution
      */
@@ -134,7 +135,7 @@ public class PendingCall<T extends Serializable> {
     synchronized public void cancel(){
         if(!this.isResolved()){
             this.isCancelled = true;
-            this.fail("fr.viveris.vizada.jnidbus.cancelled","the call was forcibly cancelled");
+            this.fail(PENDING_CALL_CANCELLED_ERROR_CODE,"the call was forcibly cancelled");
         }
     }
 

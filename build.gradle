@@ -28,10 +28,13 @@ test {
 }
 
 //add JNI library path for JMH and tests
-test {
-    jvmArgs "-Djava.library.path=${project.projectDir}/src/main/resources"
-    testLogging {
-        events "failed"
+def root = project.projectDir
+allprojects{
+    tasks.withType(Test) {
+        jvmArgs "-Djava.library.path=${root}/src/main/resources"
+        testLogging {
+            events "failed"
+        }
     }
 }
 jmh{
