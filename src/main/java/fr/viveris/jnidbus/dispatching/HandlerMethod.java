@@ -43,6 +43,7 @@ public class HandlerMethod{
      *
      * @param handler object on which we want to call the method
      * @param handlerMethod method to call
+     * @param returnType return type class of the method
      */
     public HandlerMethod(Object handler, Method handlerMethod, Class<? extends Serializable> returnType) {
         this.returnClass = returnType;

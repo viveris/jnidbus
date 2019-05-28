@@ -105,7 +105,7 @@ public class Dispatcher {
      * @param interfaceName interface on which the message was received
      * @param member member of the message
      * @param msgPointer pointer to the message we should reply to, can be 0
-     * @return
+     * @return did the dispatcher handle the message
      */
     public boolean dispatch(DBusObject args, String interfaceName, String member, long msgPointer) {
         LOG.debug("Dispatcher {} received a message for {}.{}({})",this.path,interfaceName,member,args.getSignature());
@@ -176,7 +176,7 @@ public class Dispatcher {
 
     /**
      * await on the synchronization barrier
-     * @throws InterruptedException
+     * @throws InterruptedException thrown when the registration is interrupted
      */
     public void awaitRegistration() throws InterruptedException {
         this.barrier.await();

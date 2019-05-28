@@ -7,8 +7,6 @@ apply plugin: 'java'
 sourceCompatibility = java_version
 targetCompatibility = java_version
 
-version jnidbus_version
-
 // Set up dependencies.
 repositories {
     mavenCentral()
@@ -58,3 +56,5 @@ test.outputs.upToDateWhen {false}
 tasks.withType(Test) {
     maxParallelForks = 4
 }
+
+apply from: 'maven.gradle'

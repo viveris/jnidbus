@@ -51,8 +51,8 @@ public class MessageMetadata {
      * an error was found. If the class contains other serializable classes, it will recursively check those as well and
      * cache them.
      *
-     * @param clazz
-     * @throws MessageCheckException
+     * @param clazz class to analyze
+     * @throws MessageCheckException thrown when the class is not a valid serializable class
      */
     public MessageMetadata(Class<? extends Serializable> clazz) throws MessageCheckException {
         this.clazz = clazz;
@@ -131,7 +131,7 @@ public class MessageMetadata {
     /**
      * Create a new empty instances of the Message object (for unserialization).
      *
-     * @return
+     * @return new empty instance of the message
      */
     public Serializable newInstance(){
         try {

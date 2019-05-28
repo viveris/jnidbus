@@ -55,6 +55,7 @@ public class PendingCall<T extends Serializable> {
      * Create a new PendingCall returning an instance of the given class.
      *
      * @param clazz return type class
+     * @param eventLoop event loop the pending call must be dispatched if the listener is bound after the result was received
      */
     public PendingCall(Class<T> clazz, EventLoop eventLoop){
         this.eventLoop = eventLoop;
@@ -140,7 +141,7 @@ public class PendingCall<T extends Serializable> {
     /**
      * Returns whether a a result or error was received or not
      *
-     * @return
+     * @return did the promise received an error or a result
      */
     synchronized public boolean isResolved(){
         return this.error != null || this.result != null;

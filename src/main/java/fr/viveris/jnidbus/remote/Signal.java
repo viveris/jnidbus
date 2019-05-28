@@ -4,7 +4,7 @@ import fr.viveris.jnidbus.serialization.Serializable;
 
 /**
  * Class any JNIDBus signal must extend, the generic type will be the data attached to the signal
- * @param <In>
+ * @param <In> data type attached to the signal
  */
 public class Signal<In extends Serializable> {
     private In param;

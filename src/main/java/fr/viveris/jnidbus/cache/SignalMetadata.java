@@ -11,7 +11,7 @@ public class SignalMetadata {
     /**
      * Create a new cache entry for the given signal class. The class will be checked and an exception will be thrown if
      * an error was found
-     * @param signal
+     * @param signal signal class to analyze
      */
     public SignalMetadata(Class<? extends Signal> signal){
         Class<?> enclosing = signal.getEnclosingClass();

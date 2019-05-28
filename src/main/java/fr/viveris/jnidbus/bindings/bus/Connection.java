@@ -30,10 +30,13 @@ public class Connection {
     }
 
     /**
-     * Create a DBus connection on the desired bus. the address is nullable and if it is set to null, dbus will sue the
-     * DBUS_SESSION_BUS_ADDRESS environment variable
-     * @param type
-     * @return
+     * Create a DBus connection on the desired bus.
+     * @param type type of bus to connect to
+     * @param busName bus name we want to own
+     * @param busAddress address the dbus-daemon is listening, libdbus will default to the DBUS_SESSION_BUS_ADDRESS
+     *                   environment variable of busAddress is null
+     * @return connected bus
+     * @throws ConnectionException thrown when libdbus could not create the connection
      */
     public static native Connection createConnection(BusType type, String busName, String busAddress) throws ConnectionException;
 

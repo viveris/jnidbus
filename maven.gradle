@@ -1,0 +1,47 @@
+apply plugin: 'maven-publish'
+
+//generate sources task
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+//generate javadoc task
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            //name and version of the artifact
+            group 'fr.viveris'
+            artifactId = 'jnidbus'
+            version jnidbus_version
+            
+            //publish compiled java, sources and javadoc
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+            
+            //POM file metadata
+            pom {
+                name = 'JNIDBus'
+                description = 'An efficient and simple wrapper around libdbus'
+                licenses {
+                    license {
+                        name = 'The Academic Free License, Version 2.1'
+                        url = 'https://spdx.org/licenses/AFL-2.1.html'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'lmascaro'
+                        name = 'Mascaro Lucas'
+                    }
+                }
+            }
+        }
+    }
+}

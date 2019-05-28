@@ -2,7 +2,7 @@ package fr.viveris.jnidbus.message;
 
 import fr.viveris.jnidbus.cache.Cache;
 import fr.viveris.jnidbus.cache.MessageMetadata;
-import fr.viveris.jnidbus.exception.MessageSignatureMismatch;
+import fr.viveris.jnidbus.exception.MessageSignatureMismatchException;
 import fr.viveris.jnidbus.serialization.DBusObject;
 import fr.viveris.jnidbus.serialization.DBusType;
 import fr.viveris.jnidbus.serialization.Serializable;
@@ -12,7 +12,10 @@ import fr.viveris.jnidbus.serialization.signature.SignatureElement;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Represent anything that can be sent to dbus. This class implements serialization and unserialization methods that
@@ -37,7 +40,7 @@ public abstract class Message implements Serializable {
      * by different class loaders. In addition this map is weak so an unused class loader can be freed without issues
      * (hot reload of classes for example)
      */
-    private static final Map<ClassLoader, Cache<String, MessageMetadata>> CACHE = Collections.synchronizedMap(new WeakHashMap<ClassLoader, Cache<String, MessageMetadata>>());
+    private static final Cache<Class<? extends Serializable>, MessageMetadata> CACHE = new Cache<>();
 
 
     @Override
@@ -84,13 +87,13 @@ public abstract class Message implements Serializable {
     }
 
     @Override
-    public void unserialize(DBusObject obj) throws MessageSignatureMismatch {
+    public void unserialize(DBusObject obj) throws MessageSignatureMismatchException {
         //retrieve reflection data from the cache
         Class<? extends Message> clazz = this.getClass();
         MessageMetadata messageMetadata = Message.retrieveFromCache(clazz);
 
         //check if the given pre-unserialized object have the same signature as this class
-        if(!messageMetadata.getSignature().equals(obj.getSignature())) throw new MessageSignatureMismatch("Signature mismatch, expected "+ messageMetadata.getSignature()+" but got "+obj.getSignature());
+        if(!messageMetadata.getSignature().equals(obj.getSignature())) throw new MessageSignatureMismatchException("Signature mismatch, expected "+ messageMetadata.getSignature()+" but got "+obj.getSignature());
 
         //get the value sand iterate through the signature
         Object[] values = obj.getValues();
@@ -161,9 +164,9 @@ public abstract class Message implements Serializable {
      * @param signature
      * @param genericType
      * @return
-     * @throws MessageSignatureMismatch
+     * @throws MessageSignatureMismatchException
      */
-    private static List unserializeList(Object[] values , SignatureElement signature, Type genericType) throws MessageSignatureMismatch {
+    private static List unserializeList(Object[] values , SignatureElement signature, Type genericType) throws MessageSignatureMismatchException {
         //if the array si primitive, transform it in a list
         if(signature.getPrimitive() != null){
             //when the list is empty or null, the asList() method consider it to be an element of an array and not the array, the next line fixes this behavior
@@ -199,26 +202,13 @@ public abstract class Message implements Serializable {
      * @return the cached entity
      */
     public static MessageMetadata retrieveFromCache(Class<? extends Serializable> clazz){
-        //try to retrieve from cache or create cache
-        Cache<String,MessageMetadata> cache = CACHE.get(clazz.getClassLoader());
-
         //if the cache is null, make the entity null, the cache will be created when the clazz is processed
-        MessageMetadata meta = null;
-        if(cache != null) {
-            meta = cache.getCachedEntity(clazz.getName());
-            if(meta != null){
-                return meta;
-            }
+        MessageMetadata meta = CACHE.getCachedEntity(clazz);
+        if(meta != null){
+            return meta;
         }
 
         try {
-            //check if the entity is in cache, if so everything have already been checked and cached
-            if (cache == null){
-                cache = new Cache<>();
-                CACHE.put(clazz.getClassLoader(),cache);
-            }
-            if (cache.getCachedEntity(clazz.getName()) != null) return cache.getCachedEntity(clazz.getName());
-
             meta = new MessageMetadata(clazz);
             Message.addToCache(clazz,meta);
             return meta;
@@ -227,9 +217,8 @@ public abstract class Message implements Serializable {
         }
     }
 
-    public static void addToCache(Class clazz, MessageMetadata meta){
-        Cache<String,MessageMetadata> cacheContainer = CACHE.get(clazz.getClassLoader());
-        cacheContainer.addCachedEntity(clazz.getName(), meta);
+    public static void addToCache(Class<? extends Serializable> clazz, MessageMetadata meta){
+        CACHE.addCachedEntity(clazz, meta);
     }
 
     /**

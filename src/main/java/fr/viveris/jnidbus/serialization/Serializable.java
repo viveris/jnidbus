@@ -1,6 +1,6 @@
 package fr.viveris.jnidbus.serialization;
 
-import fr.viveris.jnidbus.exception.MessageSignatureMismatch;
+import fr.viveris.jnidbus.exception.MessageSignatureMismatchException;
 
 /**
  * Define the two methods used for the serialization process.
@@ -17,7 +17,7 @@ public interface Serializable {
      * current instance we want to populate, an exception will be thrown.
      *
      * @param obj values to transfer
-     * @throws MessageSignatureMismatch thrown if the param does not contain the right signature for this instance
+     * @throws MessageSignatureMismatchException thrown if the param does not contain the right signature for this instance
      */
-    void unserialize(DBusObject obj) throws MessageSignatureMismatch;
+    void unserialize(DBusObject obj) throws MessageSignatureMismatchException;
 }

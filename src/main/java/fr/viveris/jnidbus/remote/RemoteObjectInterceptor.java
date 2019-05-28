@@ -4,29 +4,23 @@ import fr.viveris.jnidbus.bindings.bus.EventLoop;
 import fr.viveris.jnidbus.cache.Cache;
 import fr.viveris.jnidbus.cache.RemoteObjectMetadata;
 import fr.viveris.jnidbus.cache.SignalMetadata;
-import fr.viveris.jnidbus.exception.RemoteObjectCheck;
+import fr.viveris.jnidbus.exception.RemoteObjectCheckException;
 import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.PendingCall;
 import fr.viveris.jnidbus.message.sendingrequest.CallSendingRequest;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.Collections;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 public class RemoteObjectInterceptor implements InvocationHandler {
 
     /**
-     * Cache containing the reflection data. The map use a ClassLoader as a key in order to support same name classes loaded
-     * by different class loaders. In addition this map is weak so an unused class loader can be freed without issues
-     * (hot reload of classes for example)
+     * Cache containing the reflection data for the methods and signal of the interface,, we don't need to
+     * make the cache static as
      */
-    private static final Map<ClassLoader, Cache<Method, RemoteObjectMetadata>> METHOD_CACHE =
-            Collections.synchronizedMap(new WeakHashMap<ClassLoader, Cache<Method, RemoteObjectMetadata>>());
+    private static final Cache<Method, RemoteObjectMetadata> METHOD_CACHE = new Cache<>();
 
-    private static final Map<ClassLoader, Cache<Class<? extends Signal>, SignalMetadata>> SIGNAL_CACHE =
-            Collections.synchronizedMap(new WeakHashMap<ClassLoader, Cache<Class<? extends Signal>, SignalMetadata>>());
+    private static final Cache<Class<? extends Signal>, SignalMetadata> SIGNAL_CACHE = new Cache<>();
 
     private String destinationBus;
     private String objectPath;
@@ -82,29 +76,23 @@ public class RemoteObjectInterceptor implements InvocationHandler {
     }
 
     private static RemoteObjectMetadata getFromCache(Method method){
-        //check if the entity is in cache, if so everything have already been checked and cached
-        ClassLoader cl = method.getDeclaringClass().getClassLoader();
-        if (!METHOD_CACHE.containsKey(cl)) METHOD_CACHE.put(cl, new Cache<Method, RemoteObjectMetadata>());
-        if (METHOD_CACHE.get(cl).getCachedEntity(method) != null) return METHOD_CACHE.get(cl).getCachedEntity(method);
+        if (METHOD_CACHE.getCachedEntity(method) != null) return METHOD_CACHE.getCachedEntity(method);
 
         //the method is not in cache, build the cache entity, add it and return
         try {
             RemoteObjectMetadata meta = new RemoteObjectMetadata(method);
-            METHOD_CACHE.get(cl).addCachedEntity(method,meta);
+            METHOD_CACHE.addCachedEntity(method,meta);
             return meta;
-        } catch (RemoteObjectCheck remoteObjectCheck) {
-            throw new IllegalStateException("The remote object method: "+method.getName()+" is invalid",remoteObjectCheck);
+        } catch (RemoteObjectCheckException remoteObjectCheckException) {
+            throw new IllegalStateException("The remote object method: "+method.getName()+" is invalid", remoteObjectCheckException);
         }
     }
 
     public static SignalMetadata getFromCache(Class<? extends Signal> signal){
-        //check if the entity is in cache, if so everything have already been checked and cached
-        ClassLoader cl = signal.getDeclaringClass().getClassLoader();
-        if (!SIGNAL_CACHE.containsKey(cl)) SIGNAL_CACHE.put(cl, new Cache<Class<? extends Signal>, SignalMetadata>());
-        if (SIGNAL_CACHE.get(cl).getCachedEntity(signal) != null) return SIGNAL_CACHE.get(cl).getCachedEntity(signal);
+        if (SIGNAL_CACHE.getCachedEntity(signal) != null) return SIGNAL_CACHE.getCachedEntity(signal);
 
         SignalMetadata meta = new SignalMetadata(signal);
-        SIGNAL_CACHE.get(cl).addCachedEntity(signal,meta);
+        SIGNAL_CACHE.addCachedEntity(signal,meta);
         return meta;
     }
 }

@@ -60,6 +60,8 @@ public class Dbus implements AutoCloseable {
      *
      * @param type bus type, please refer to the DBus documentation for more info on them
      * @param busName bus name, should respect the Dbus name format (similar to the java namespace format)
+     * @param busAddress path the dbus daemon is listening on, if null is passed, libdbus will fall back to the
+     *                   DBUS_SESSION_BUS_ADDRESS environment variable
      * @throws ConnectionException thrown id something goes wrong with dbus (bus name already in used, bus unavailable, etc...)
      */
     public Dbus(BusType type, String busName,String busAddress) throws ConnectionException {
@@ -125,11 +127,11 @@ public class Dbus implements AutoCloseable {
      *
      * All the methods of the given interface should return either a Promise of a Message or void
      *
-     * @param destinationBus
-     * @param objectPath
-     * @param objectInterface
-     * @param <T>
-     * @return
+     * @param destinationBus bus name on which the object methods will eb called
+     * @param objectPath object path on the bus
+     * @param objectInterface java interface representing the remote object
+     * @param <T> java interface type
+     * @return proxy instance which will perform the calls
      */
     @SuppressWarnings("unchecked")
     public <T> T createRemoteObject(String destinationBus, String objectPath, Class<T> objectInterface){

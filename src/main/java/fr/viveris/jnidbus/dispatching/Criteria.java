@@ -20,10 +20,11 @@ public class Criteria {
     /**
      * Create a new criteria, its output signature can be null
      *
-     * @param member
-     * @param inputSignature
+     * @param member dbus member to match
+     * @param inputSignature input signature to match
      * @param outputSignature used for debug only, as DBus does not do any match on output signature it is just a way for the developer
      *        to quickly see what DBus signature is generated.
+     * @param type type of message to match (call or signal)
      */
     public Criteria(String member, String inputSignature, String outputSignature, MemberType type) {
         this.member = member;

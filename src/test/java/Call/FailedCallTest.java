@@ -8,7 +8,7 @@ import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.dispatching.annotation.HandlerMethod;
 import fr.viveris.jnidbus.exception.DBusException;
-import fr.viveris.jnidbus.exception.MessageSignatureMismatch;
+import fr.viveris.jnidbus.exception.MessageSignatureMismatchException;
 import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.PendingCall;
 import fr.viveris.jnidbus.remote.RemoteInterface;
@@ -53,7 +53,7 @@ public class FailedCallTest extends DBusTestCase {
         assertTrue(l.getBarrier().await(2, TimeUnit.SECONDS));
         assertNull(l.getValue());
         assertNotNull(l.getT());
-        assertEquals(MessageSignatureMismatch.class.getName(),l.getT().getCode());
+        assertEquals(MessageSignatureMismatchException.class.getName(),l.getT().getCode());
     }
 
     @Test

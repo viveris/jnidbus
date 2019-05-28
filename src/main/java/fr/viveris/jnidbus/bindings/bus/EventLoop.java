@@ -95,7 +95,7 @@ public class EventLoop implements Closeable {
      * Launch a new event loop for the given connection. The constructor will create the thread hosting the event loop and return.
      * any exception thrown during the event loop initialization will be stored as a property of the event loop and thrown each time
      * a call is made to it.
-     * @param connection
+     * @param connection connection the event loop will be bound to
      */
     public EventLoop(Connection connection){
         this.connection = connection;
@@ -286,8 +286,8 @@ public class EventLoop implements Closeable {
     }
 
     /**
-     * Asynchronously send a message to dbus. This method might throw an exception if the sending queue is full
-     * @param request
+     * Asynchronously send a message to dbus.
+     * @param request sending request we want the event loop to process
      */
     public void send(AbstractSendingRequest request){
         this.checkEventLoop();
@@ -328,7 +328,7 @@ public class EventLoop implements Closeable {
 
     /**
      * Close the event loop. During the event loop shutdown, the close method will be called on the Connection object
-     * @throws IOException
+     * @throws IOException never thrown
      */
     @Override
     public void close() throws IOException {
