@@ -4,6 +4,7 @@ import fr.viveris.jnidbus.cache.MessageMetadata;
 import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.serialization.Serializable;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -12,6 +13,7 @@ import java.lang.reflect.Method;
  * cache the input and output types, which will check the validity of the types
  */
 public class HandlerMethod{
+    static MethodInvocator kotlinInvocator;
 
     /**
      * Object on which we call the methods
@@ -39,6 +41,11 @@ public class HandlerMethod{
     private Class<? extends Serializable> returnClass;
 
     /**
+     * Is the current method a kotlin method
+     */
+    private boolean isKotlinMethod;
+
+    /**
      * Create a new HandlerMethod. Will throw if the types of the methods are invalid
      *
      * @param handler object on which we want to call the method
@@ -57,6 +64,14 @@ public class HandlerMethod{
         }else{
             this.outputType = null;
         }
+
+        Class handlerClass = handler.getClass();
+        ClassLoader handlerClassLoader = handlerClass.getClassLoader();
+        try {
+            this.isKotlinMethod = handler.getClass().isAnnotationPresent(handlerClassLoader.loadClass("kotlin.Metadata").asSubclass(Annotation.class));
+        } catch (ClassNotFoundException e) {
+            this.isKotlinMethod = false;
+        }
     }
 
     public Class<? extends Serializable> getReturnType(){
@@ -68,7 +83,11 @@ public class HandlerMethod{
     }
 
     public Object call(Serializable param) throws InvocationTargetException, IllegalAccessException {
-        return this.handlerMethod.invoke(this.handler,param);
+        if(this.isKotlinMethod && kotlinInvocator != null){
+            return kotlinInvocator.call(this.handler,this.handlerMethod,param);
+        }else{
+            return this.handlerMethod.invoke(this.handler,param);
+        }
     }
 
     public MessageMetadata getInputType() {
@@ -77,5 +96,9 @@ public class HandlerMethod{
 
     public MessageMetadata getOutputType() {
         return outputType;
+    }
+
+    public interface MethodInvocator{
+        <T extends Serializable> Object call(Object handler, Method method, Serializable param);
     }
 }

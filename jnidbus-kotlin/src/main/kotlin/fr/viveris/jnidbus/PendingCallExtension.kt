@@ -1,4 +1,4 @@
-package fr.viveris
+package fr.viveris.jnidbus
 
 import fr.viveris.jnidbus.exception.DBusException
 import fr.viveris.jnidbus.message.PendingCall
