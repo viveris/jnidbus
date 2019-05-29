@@ -311,11 +311,39 @@ msg.setString("A string");
 sender.sendSignal("/remote/object/path",new MyRemoteObject.StringSignal(msg));
 ```
 
+## Kotlin
+
+A support library for Kotlin is available under the artifact `jnidbus-kotlin`, it provides basic support for coroutines through the `await()` extension on the `PendingCall` class and it also allows for DBus handlers to declare suspending methods. In order to do so, your handler class must extends the `KotlinGenericHandler` class instead of the `GenericHandler` one.
+
+*<u>how to use jnidbus-kotlin:</u>*
+
+```kotlin
+/// How to write a suspending dbus handler ///
+@Handler(path = "...", interfaceName = "...")
+class CallHandler : KotlinGenericHandler() {
+
+    @HandlerMethod(member = "suspendingCall", type = MemberType.METHOD)
+    suspend fun suspendingCall(emptyMessage: Message.EmptyMessage): SingleStringMessage {
+        //coroutines are awesome
+        delay(2000)
+        return SingleStringMessage().apply { string = "test" }
+    }
+}
+
+/// How to do a suspending dbus call ///
+suspend fun suspendingDBusCall() : SingleStringMessage{
+    val remoteObj = dbus.createRemoteObject("...", "...",SomeRemoteInterface::class.java)
+    val pending = remoteObj.suspendingCall()
+    return pending.await()
+}
+
+```
+
+
+
 ## Planned features
 
 - Support `DICT_ENTRY` type
-- Integrate Log4J for a easier debugging
-- Extension functions for Kotlin and support for coroutines
 
 ## FAQ
 
