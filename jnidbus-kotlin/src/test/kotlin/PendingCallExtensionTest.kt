@@ -23,8 +23,8 @@ class PendingCallExtensionTest : DBusTestCase() {
         this@PendingCallExtensionTest.receiver.addHandler(handler)
         val remoteObj = this@PendingCallExtensionTest.sender.createRemoteObject(
                 this@PendingCallExtensionTest.receiverBusName,
-                "/Call/AsyncCallTest",
-                AsyncCallTestRemote::class.java)
+                "/Kotlin/PendingCallExtensionTest",
+                PendingCallExtensionTestRemote::class.java)
 
         val pending = remoteObj.blockingCall()
         val msg = withTimeout(2500){
@@ -40,8 +40,8 @@ class PendingCallExtensionTest : DBusTestCase() {
         this@PendingCallExtensionTest.receiver.addHandler(handler)
         val remoteObj = this@PendingCallExtensionTest.sender.createRemoteObject(
                 this@PendingCallExtensionTest.receiverBusName,
-                "/Call/AsyncCallTest",
-                AsyncCallTestRemote::class.java)
+                "/Kotlin/PendingCallExtensionTest",
+                PendingCallExtensionTestRemote::class.java)
 
         val pending = remoteObj.failCall()
         try{
@@ -60,8 +60,8 @@ class PendingCallExtensionTest : DBusTestCase() {
         this@PendingCallExtensionTest.receiver.addHandler(handler)
         val remoteObj = this@PendingCallExtensionTest.sender.createRemoteObject(
                 this@PendingCallExtensionTest.receiverBusName,
-                "/Call/AsyncCallTest",
-                AsyncCallTestRemote::class.java)
+                "/Kotlin/PendingCallExtensionTest",
+                PendingCallExtensionTestRemote::class.java)
 
         val pending = remoteObj.blockingCall()
         pending.cancel()
@@ -75,7 +75,7 @@ class PendingCallExtensionTest : DBusTestCase() {
         }
     }
 
-    @Handler(path = "/Call/AsyncCallTest", interfaceName = "Call.AsyncCallTest")
+    @Handler(path = "/Kotlin/PendingCallExtensionTest", interfaceName = "Kotlin.PendingCallExtensionTest")
     class CallHandler : GenericHandler() {
 
         @HandlerMethod(member = "blockingCall", type = MemberType.METHOD)
@@ -89,8 +89,8 @@ class PendingCallExtensionTest : DBusTestCase() {
         }
     }
 
-    @RemoteInterface("Call.AsyncCallTest")
-    interface AsyncCallTestRemote {
+    @RemoteInterface("Kotlin.PendingCallExtensionTest")
+    interface PendingCallExtensionTestRemote {
         @RemoteMember("blockingCall")
         fun blockingCall(): PendingCall<SingleStringMessage>
 

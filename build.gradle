@@ -60,4 +60,4 @@ tasks.withType(Test) {
     maxParallelForks = 4
 }
 
-apply from: 'maven.gradle'
+apply from: rootProject.file('maven.gradle')

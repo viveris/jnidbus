@@ -30,8 +30,8 @@ class SuspendingHandlerTest : DBusTestCase(){
         this@SuspendingHandlerTest.receiver.addHandler(handler)
         val remoteObj = this@SuspendingHandlerTest.sender.createRemoteObject(
                 this@SuspendingHandlerTest.receiverBusName,
-                "/Call/AsyncCallTest",
-                AsyncCallTestRemote::class.java)
+                "/Kotlin/SuspendingHandlerTest",
+                SuspendingHandlerTestRemote::class.java)
 
         val pending = remoteObj.blockingCall()
         val msg = withTimeout(2500){
@@ -41,7 +41,24 @@ class SuspendingHandlerTest : DBusTestCase(){
         assertEquals("test",msg.string)
     }
 
-    @Handler(path = "/Call/AsyncCallTest", interfaceName = "Call.AsyncCallTest")
+    @Test
+    fun `Handler can do standard calls`() = runBlocking{
+        val handler = CallHandler()
+        this@SuspendingHandlerTest.receiver.addHandler(handler)
+        val remoteObj = this@SuspendingHandlerTest.sender.createRemoteObject(
+                this@SuspendingHandlerTest.receiverBusName,
+                "/Kotlin/SuspendingHandlerTest",
+                SuspendingHandlerTestRemote::class.java)
+
+        val pending = remoteObj.standardCall()
+        val msg = withTimeout(2500){
+            pending.await()
+        }
+
+        assertEquals("test",msg.string)
+    }
+
+    @Handler(path = "/Kotlin/SuspendingHandlerTest", interfaceName = "Kotlin.SuspendingHandlerTest")
     class CallHandler : KotlinGenericHandler() {
 
         @HandlerMethod(member = "blockingCallWithSuspend", type = MemberType.METHOD)
@@ -50,21 +67,19 @@ class SuspendingHandlerTest : DBusTestCase(){
             return SingleStringMessage().apply { string = "test" }
         }
 
-        @HandlerMethod(member = "blockingCallWithPromise", type = MemberType.METHOD)
-        fun blockingCallWithPromise(emptyMessage: Message.EmptyMessage): Promise<SingleStringMessage> {
-            val promise = Promise<SingleStringMessage>()
-            GlobalScope.launch {
-                delay(2000)
-                promise.resolve(SingleStringMessage().apply { string = "test" })
-            }
-            return promise
+        @HandlerMethod(member = "standardCall", type = MemberType.METHOD)
+        fun standardCall(emptyMessage: Message.EmptyMessage): SingleStringMessage {
+            return SingleStringMessage().apply { string = "test" }
         }
     }
 
-    @RemoteInterface("Call.AsyncCallTest")
-    interface AsyncCallTestRemote {
+    @RemoteInterface("Kotlin.SuspendingHandlerTest")
+    interface SuspendingHandlerTestRemote {
 
         @RemoteMember("blockingCallWithSuspend")
         fun blockingCall(): PendingCall<SingleStringMessage>
+
+        @RemoteMember("standardCall")
+        fun standardCall(): PendingCall<SingleStringMessage>
     }
 }

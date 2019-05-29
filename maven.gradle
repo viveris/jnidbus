@@ -1,8 +1,10 @@
 apply plugin: 'maven-publish'
 
+def currentProject = this
+
 //generate sources task
 task sourcesJar(type: Jar) {
-    from sourceSets.main.allJava
+    from project.sourceSets.main.allSource
     archiveClassifier = 'sources'
 }
 
@@ -14,14 +16,14 @@ task javadocJar(type: Jar) {
 
 publishing {
     publications {
-        mavenJava(MavenPublication) {
+        maven(MavenPublication) {
             //name and version of the artifact
             group 'fr.viveris'
-            artifactId = 'jnidbus'
+            artifactId = currentProject.name
             version jnidbus_version
             
             //publish compiled java, sources and javadoc
-            from components.java
+            from currentProject.components.java
             artifact sourcesJar
             artifact javadocJar
             
