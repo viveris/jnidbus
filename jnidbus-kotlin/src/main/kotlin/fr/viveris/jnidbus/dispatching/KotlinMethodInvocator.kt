@@ -11,16 +11,33 @@ import java.lang.reflect.Method
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.jvm.kotlinFunction
 
+/**
+ * Invocator used by jnidbus to process suspending kotlin functions, the invocator must be explicitly register using
+ * the static KotlinMethodInvocator.registerKotlinInvocator() method
+ */
 class KotlinMethodInvocator : HandlerMethod.MethodInvocator{
     /**
      * Equivalent of the static{} initializer in Java
      */
     companion object{
+        /**
+         * Register the invocator to jnidbus
+         */
         fun registerKotlinInvocator() {
             HandlerMethod.kotlinInvocator = KotlinMethodInvocator()
         }
     }
 
+    /**
+     * Used by jnidbus to call the suspending handler. A suspending handler will always return a promise and be launched
+     * in the GlobalScope using the common worker pool.
+     *
+     * @param handler handler instance
+     * @param method method to call, must be a kotlin method
+     * @param param parameter to use to call the handler
+     *
+     * @return Any must be used because of the way the jnidbus Dispatcher is built, but it will always return a Promise
+     */
     override fun <T : Serializable>call(handler : Any?, method: Method, param: Serializable?): Any {
         val promise = Promise<T>()
         val kotlinMethod = method.kotlinFunction!!

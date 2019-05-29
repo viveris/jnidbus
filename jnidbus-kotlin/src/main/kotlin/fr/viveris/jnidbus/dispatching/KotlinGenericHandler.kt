@@ -11,7 +11,13 @@ import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.isSubtypeOf
 import kotlin.reflect.jvm.javaMethod
 
+/**
+ * Class overriding the default GenericHandler method analysis to handle suspending methods.
+ */
 abstract class KotlinGenericHandler : GenericHandler() {
+    /**
+     * Analyze all the extending class method to find and analyze @HandlerMethod methods. Suspending methods are supported
+     */
     @Suppress("UNCHECKED_CAST")
     override fun getAvailableCriterias(): HashMap<Criteria, HandlerMethod> {
         val methods = this::class.declaredMemberFunctions

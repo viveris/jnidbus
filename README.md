@@ -315,10 +315,14 @@ sender.sendSignal("/remote/object/path",new MyRemoteObject.StringSignal(msg));
 
 A support library for Kotlin is available under the artifact `jnidbus-kotlin`, it provides basic support for coroutines through the `await()` extension on the `PendingCall` class and it also allows for DBus handlers to declare suspending methods. In order to do so, your handler class must extends the `KotlinGenericHandler` class instead of the `GenericHandler` one.
 
+Please note that you must explicitly register the kotlin extension to jnidbus by using the `KotlinMethodInvocator.registerKotlinInvocator()` before registering any kotlin handler
+
 *<u>how to use jnidbus-kotlin:</u>*
 
 ```kotlin
 /// How to write a suspending dbus handler ///
+KotlinMethodInvocator.registerKotlinInvocator()
+
 @Handler(path = "...", interfaceName = "...")
 class CallHandler : KotlinGenericHandler() {
 
