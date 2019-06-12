@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,18 +65,18 @@ public class EventLoop implements Closeable {
     /**
      * Queue of dispatchers to register to Dbus
      */
-    private LinkedBlockingDeque<Dispatcher> handlerAddingQueue = new LinkedBlockingDeque<>();
+    private ConcurrentLinkedDeque<Dispatcher> handlerAddingQueue = new ConcurrentLinkedDeque<>();
 
     /**
      * Queue of sending request. A sending request represent any type of message we want to send through DBus (signal, calls, method return, errors)
      */
-    private LinkedBlockingDeque<AbstractSendingRequest> signalSendingQueue = new LinkedBlockingDeque<>();
+    private ConcurrentLinkedDeque<AbstractSendingRequest> signalSendingQueue = new ConcurrentLinkedDeque<>();
 
     /**
      * Queue containing the PendingCall that received the result before the listener was set and that need to dispatch the
      * listener notification on the event loop
      */
-    private LinkedBlockingDeque<PendingCall> redispatchRequestQueue = new LinkedBlockingDeque<>();
+    private ConcurrentLinkedDeque<PendingCall> redispatchRequestQueue = new ConcurrentLinkedDeque<>();
 
     /**
      * Java class representing the Dbus connection
@@ -223,8 +225,8 @@ public class EventLoop implements Closeable {
             this.shouldWakeup = true;
 
             //add dispatchers
-            while(!this.handlerAddingQueue.isEmpty()){
-                Dispatcher d = this.handlerAddingQueue.poll();
+            Dispatcher d;
+            while((d = this.handlerAddingQueue.poll()) != null){
                 this.addPathHandler(this.dBusContextPointer,d.getPath(),d);
                 //notify the dispatcher it has been registered
                 d.setAsRegistered();
@@ -232,13 +234,14 @@ public class EventLoop implements Closeable {
             }
 
             //execute redispatch requests
-            while (!this.redispatchRequestQueue.isEmpty()){
-                this.redispatchRequestQueue.poll().forceNotification();
+            PendingCall p;
+            while ((p = this.redispatchRequestQueue.poll()) != null){
+                p.forceNotification();
             }
 
             int i = 0;
-            while(!this.signalSendingQueue.isEmpty() && i< MAX_SEND_PER_TICK){
-                AbstractSendingRequest abstractRequest = this.signalSendingQueue.poll();
+            AbstractSendingRequest abstractRequest;
+            while((abstractRequest = this.signalSendingQueue.poll()) != null){
                 if(abstractRequest instanceof CallSendingRequest){
                     CallSendingRequest req = (CallSendingRequest)abstractRequest;
                     LOG.debug("Sending DBus call {}.{}({}) on path {} for the bus {}",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature(),req.getPath(),req.getDest());
@@ -264,7 +267,7 @@ public class EventLoop implements Closeable {
                     LOG.debug("Sending DBus signal {}.{}({}) on path {}",req.getInterfaceName(),req.getMember(),req.getMessage().getSignature(),req.getPath());
                     this.sendSignal(this.dBusContextPointer,req.getPath(),req.getInterfaceName(),req.getMember(),req.getMessage());
                 }
-                i++;
+                if(++i >= MAX_SEND_PER_TICK){ break; }
             }
 
             //launch tick
