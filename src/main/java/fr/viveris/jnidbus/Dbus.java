@@ -13,6 +13,7 @@ import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.sendingrequest.SignalSendingRequest;
 import fr.viveris.jnidbus.remote.RemoteObjectInterceptor;
 import fr.viveris.jnidbus.remote.Signal;
+import fr.viveris.jnidbus.serialization.signature.Signature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +155,8 @@ public class Dbus implements AutoCloseable {
      */
     public static void clearCache(){
         Message.clearCache();
-
+        RemoteObjectInterceptor.clearCache();
+        Signature.clearCache();
     }
 
 
