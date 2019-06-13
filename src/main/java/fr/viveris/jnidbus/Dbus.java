@@ -9,6 +9,7 @@ import fr.viveris.jnidbus.dispatching.GenericHandler;
 import fr.viveris.jnidbus.dispatching.HandlerMethod;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
 import fr.viveris.jnidbus.exception.ConnectionException;
+import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.sendingrequest.SignalSendingRequest;
 import fr.viveris.jnidbus.remote.RemoteObjectInterceptor;
 import fr.viveris.jnidbus.remote.Signal;
@@ -138,9 +139,22 @@ public class Dbus implements AutoCloseable {
         return (T) Proxy.newProxyInstance(objectInterface.getClassLoader(),new Class[]{objectInterface},new RemoteObjectInterceptor(destinationBus,objectPath,objectInterface,this.eventLoop));
     }
 
+    /**
+     * Send the given signal isntance on the given object path
+     * @param objectPath
+     * @param signal
+     */
     public void sendSignal(String objectPath, Signal signal){
         SignalMetadata meta = RemoteObjectInterceptor.getFromCache(signal.getClass());
         this.eventLoop.send(new SignalSendingRequest(signal.getParam().serialize(),objectPath,meta.getInterfaceName(),meta.getMember()));
+    }
+
+    /**
+     * Empty all the internal JNIDBus cache, usefull when doing hot reload to prevent ClassLoader leaks
+     */
+    public static void clearCache(){
+        Message.clearCache();
+
     }
 
 

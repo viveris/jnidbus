@@ -95,4 +95,9 @@ public class RemoteObjectInterceptor implements InvocationHandler {
         SIGNAL_CACHE.addCachedEntity(signal,meta);
         return meta;
     }
+
+    public static void clearCache(){
+        SIGNAL_CACHE.clear();
+        METHOD_CACHE.clear();
+    }
 }

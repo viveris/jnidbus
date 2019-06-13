@@ -19,4 +19,11 @@ public class Cache<Key, Value> {
     public Value getCachedEntity(Key key){
         return this.cachedMetadata.get(key);
     }
+
+    /**
+     * Empty the cache
+     */
+    public void clear(){
+        this.cachedMetadata.clear();
+    }
 }

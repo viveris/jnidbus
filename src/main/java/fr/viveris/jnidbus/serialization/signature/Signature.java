@@ -41,4 +41,8 @@ public class Signature implements Iterable<SignatureElement>{
     public SignatureElement getFirst(){
         return this.iterator().next();
     }
+
+    public static void clearCache(){
+        CACHE.clear();
+    }
 }

@@ -221,6 +221,10 @@ public abstract class Message implements Serializable {
         CACHE.addCachedEntity(clazz, meta);
     }
 
+    public static void clearCache(){
+        CACHE.clear();
+    }
+
     /**
      * Special type of message that do not need serialization or unserialization.
      */
