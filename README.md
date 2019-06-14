@@ -254,13 +254,8 @@ Dbus sender = new Dbus(BusType.SESSION,"my.bus.name");
 MyRemoteObject remote = sender.createRemoteObject("receiver.bus.name",
                                                   "/remote/object/path",
                                                   MyRemoteObject.class);
-
-//create your message and fill it
-StringMessage msg = new StringMessage();
-msg.setString("test");
-
 //call the method on your remote object
-PendingCall<StringMessage> pending = remote.call(;
+PendingCall<StringMessage> pending = remote.call();
 
 //create the listener
 StringListener l = new StringListener();
