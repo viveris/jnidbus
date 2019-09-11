@@ -1,3 +1,6 @@
+/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
+ * Distributed under the terms of the Academic Free License.
+ */
 #include "./headers/fr_viveris_jnidbus_bindings_bus_Connection.h"
 #include "./headers/context.h"
 #include <iostream>

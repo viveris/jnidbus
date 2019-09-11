@@ -1,3 +1,6 @@
+/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
+ * Distributed under the terms of the Academic Free License.
+ */
 #include <jni.h>
 #include <dbus/dbus.h>
 #include <map>

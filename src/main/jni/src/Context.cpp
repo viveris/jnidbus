@@ -1,3 +1,6 @@
+/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
+ * Distributed under the terms of the Academic Free License.
+ */
 #include "./headers/context.h"
 
 jclass find_class(context* context, const char* name){
