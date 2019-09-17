@@ -5,6 +5,7 @@ import fr.viveris.jnidbus.message.PendingCall
 import fr.viveris.jnidbus.message.Promise
 import fr.viveris.jnidbus.serialization.Serializable
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.lang.reflect.Method
@@ -15,16 +16,19 @@ import kotlin.reflect.jvm.kotlinFunction
  * Invocator used by jnidbus to process suspending kotlin functions, the invocator must be explicitly register using
  * the static KotlinMethodInvocator.registerKotlinInvocator() method
  */
-class KotlinMethodInvocator : HandlerMethod.MethodInvocator{
+class KotlinMethodInvocator(
+        val scope : CoroutineScope
+) : HandlerMethod.MethodInvocator{
     /**
      * Equivalent of the static{} initializer in Java
      */
     companion object{
         /**
-         * Register the invocator to jnidbus
+         * Register the invocator to jnidbus, a scope can be given to customize where the suspending handlers should
+         * be executed
          */
-        fun registerKotlinInvocator() {
-            HandlerMethod.kotlinInvocator = KotlinMethodInvocator()
+        fun registerKotlinInvocator(scope : CoroutineScope = GlobalScope) {
+            HandlerMethod.kotlinInvocator = KotlinMethodInvocator(scope)
         }
     }
 
@@ -41,7 +45,7 @@ class KotlinMethodInvocator : HandlerMethod.MethodInvocator{
     override fun <T : Serializable>call(handler : Any?, method: Method, param: Serializable?): Any {
         val promise = Promise<T>()
         val kotlinMethod = method.kotlinFunction!!
-        val job = GlobalScope.launch {
+        val job = scope.launch {
             kotlinMethod.callSuspend(handler,param)
                     .let { promise.resolve(it as T) }
         }
