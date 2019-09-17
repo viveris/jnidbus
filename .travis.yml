@@ -1,0 +1,25 @@
+language: java
+
+jdk:
+  - openjdk8
+  - openjdk11
+
+sudo: false
+
+before_install:
+  - sudo apt-get install -y libdbus-1-3 libdbus-1-dev
+
+install: true
+
+script: dbus-run-session -- ./gradlew clean check
+
+# configure caching (https://docs.travis-ci.com/user/languages/java/#Caching)
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+# format from https://docs.travis-ci.com/user/caching/#Enabling-multiple-caching-features
+cache:
+  bundler: true
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/gradle/wrapper/
