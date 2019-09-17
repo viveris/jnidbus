@@ -1,6 +1,3 @@
-/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
- * Distributed under the terms of the Academic Free License.
- */
 package fr.viveris.jnidbus.bindings.bus;
 
 import fr.viveris.jnidbus.dispatching.Dispatcher;
@@ -16,9 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -69,6 +64,11 @@ public class EventLoop implements Closeable {
      * Queue of dispatchers to register to Dbus
      */
     private ConcurrentLinkedDeque<Dispatcher> handlerAddingQueue = new ConcurrentLinkedDeque<>();
+
+    /**
+     * Queue of dispatchers to register to Dbus
+     */
+    private ConcurrentLinkedDeque<Dispatcher> handlerRemovingQueue = new ConcurrentLinkedDeque<>();
 
     /**
      * Queue of sending request. A sending request represent any type of message we want to send through DBus (signal, calls, method return, errors)
@@ -148,7 +148,7 @@ public class EventLoop implements Closeable {
      * Write arbitrary data to the wakeup file descriptor, which will unblock any ongoing tick() call
      *
      @param contextPtr pointer to the native context, its better to give it as an argument rather than fetching it from the native
-     *                 for performances purposes
+      *                 for performances purposes
      */
     public native void wakeup(long contextPtr);
 
@@ -186,7 +186,7 @@ public class EventLoop implements Closeable {
     private native void sendSignal(long contextPtr, String path, String interfaceName, String member, DBusObject msg);
 
     /**
-     * Call a dbus distant method. Calls are always made asynchronously and the result will eb given to the PendingCall
+     * fr.viveris.jnidbus.Call a dbus distant method. Calls are always made asynchronously and the result will eb given to the PendingCall
      *
      * @param contextPtr pointer to the native context, its better to give it as an argument rather than fetching it from the native
      *                   for performances purposes
@@ -211,6 +211,15 @@ public class EventLoop implements Closeable {
      */
     private native void addPathHandler(long contextPtr, String path, Dispatcher handler);
 
+    /**
+     * Unregister a path, thus destroying its dispatcher
+     *
+     * @param contextPtr pointer to the native context, its better to give it as an argument rather than fetching it from the native
+     *                   for performances purposes
+     * @param path dbus object path we want to unregister
+     */
+    private native void removePathHandler(long contextPtr, String path);
+
     private void run() throws EventLoopSetupException {
         //setup the event loop
         this.setup(this.dBusContextPointer);
@@ -234,6 +243,12 @@ public class EventLoop implements Closeable {
                 //notify the dispatcher it has been registered
                 d.setAsRegistered();
                 LOG.debug("Event loop {} successfully registered the dispatcher for the path {}",this.connection.getBusName(),d.getPath());
+            }
+
+            //remove dispatchers
+            while((d = this.handlerRemovingQueue.poll()) != null){
+                this.removePathHandler(this.dBusContextPointer,d.getPath());
+                LOG.debug("Event loop {} successfully unregistered the dispatcher for the path {}",this.connection.getBusName(),d.getPath());
             }
 
             //execute redispatch requests
@@ -288,6 +303,16 @@ public class EventLoop implements Closeable {
     public void addPathHandler(Dispatcher dispatcher){
         this.checkEventLoop();
         this.handlerAddingQueue.add(dispatcher);
+        this.wakeupIfNeeded();
+    }
+
+    /**
+     *
+     * @param dispatcher dispatcher to unregister
+     */
+    public void removePathHandler(Dispatcher dispatcher){
+        this.checkEventLoop();
+        this.handlerRemovingQueue.add(dispatcher);
         this.wakeupIfNeeded();
     }
 

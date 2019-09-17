@@ -1,6 +1,3 @@
-/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
- * Distributed under the terms of the Academic Free License.
- */
 package fr.viveris.jnidbus.dispatching;
 
 import fr.viveris.jnidbus.bindings.bus.EventLoop;
@@ -97,6 +94,25 @@ public class Dispatcher {
         //add the criteria and its handler method
         interfaceCriterias.add(criteria);
         this.handlers.put(criteria,handlerMethod);
+    }
+
+    public void removeCriteria(String interfaceName, Criteria criteria, HandlerMethod handlerMethod){
+        ArrayList<Criteria> interfaceCriterias = this.handlersCriterias.get(interfaceName);
+
+        //if the interface was never sued before, create its list of criteria
+        if(interfaceCriterias == null){
+            return;
+        }
+
+        //check for conflicts
+        if(interfaceCriterias.remove(criteria))
+
+            //add the criteria and its handler method
+            this.handlers.remove(criteria);
+    }
+
+    public boolean isEmpty(){
+        return this.handlers.size() == 0;
     }
 
     /**

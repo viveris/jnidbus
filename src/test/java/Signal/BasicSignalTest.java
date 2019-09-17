@@ -1,6 +1,3 @@
-/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
- * Distributed under the terms of the Academic Free License.
- */
 package Signal;
 
 import Common.DBusTestCase;
@@ -29,8 +26,20 @@ public class BasicSignalTest extends DBusTestCase {
     public void emptySignal() throws InterruptedException {
         SignalHandler handler = new SignalHandler();
         this.receiver.addHandler(handler);
-        this.sender.sendSignal("/Signal/BasicSignalTest",new BasicSignalTestRemote.EmptySignal());
+        this.sender.sendSignal("/fr/viveris/jnidbus/signal/BasicSignalTest",new BasicSignalTestRemote.EmptySignal());
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testHandlerCanBeUnregistered() throws InterruptedException {
+        SignalHandler handler = new SignalHandler();
+        this.receiver.addHandler(handler);
+        this.sender.sendSignal("/fr/viveris/jnidbus/signal/BasicSignalTest",new BasicSignalTestRemote.EmptySignal());
+        assertTrue(handler.barrier.await(500, TimeUnit.MILLISECONDS));
+        this.receiver.removeHandler(handler);
+        handler.reset();
+        this.sender.sendSignal("/fr/viveris/jnidbus/signal/BasicSignalTest",new BasicSignalTestRemote.EmptySignal());
+        assertFalse(handler.barrier.await(500, TimeUnit.MILLISECONDS));
     }
 
     @Test
@@ -39,7 +48,7 @@ public class BasicSignalTest extends DBusTestCase {
         this.receiver.addHandler(handler);
         SingleStringMessage msg = new SingleStringMessage();
         msg.setString(testString);
-        this.sender.sendSignal("/Signal/BasicSignalTest",new BasicSignalTestRemote.StringSignalOnWrongEndpoint(msg));
+        this.sender.sendSignal("/fr/viveris/jnidbus/signal/BasicSignalTest",new BasicSignalTestRemote.StringSignalOnWrongEndpoint(msg));
         assertFalse(handler.barrier.await(2, TimeUnit.SECONDS));
     }
 
@@ -49,14 +58,14 @@ public class BasicSignalTest extends DBusTestCase {
         this.receiver.addHandler(handler);
         SingleStringMessage msg = new SingleStringMessage();
         msg.setString(testString);
-        this.sender.sendSignal("/Signal/BasicSignalTest",new BasicSignalTestRemote.StringSignal(msg));
+        this.sender.sendSignal("/fr/viveris/jnidbus/signal/BasicSignalTest",new BasicSignalTestRemote.StringSignal(msg));
         assertTrue(handler.barrier.await(2, TimeUnit.SECONDS));
     }
 
 
     @Handler(
-            path = "/Signal/BasicSignalTest",
-            interfaceName = "Signal.BasicSignalTest"
+            path = "/fr/viveris/jnidbus/signal/BasicSignalTest",
+            interfaceName = "fr.viveris.jnidbus.Signal.BasicSignalTest"
     )
     public class SignalHandler extends GenericHandler {
         private CountDownLatch barrier = new CountDownLatch(1);
@@ -78,9 +87,13 @@ public class BasicSignalTest extends DBusTestCase {
                 this.barrier.countDown();
             }
         }
+
+        public void reset(){
+            this.barrier = new CountDownLatch(1);
+        }
     }
 
-    @RemoteInterface("Signal.BasicSignalTest")
+    @RemoteInterface("fr.viveris.jnidbus.Signal.BasicSignalTest")
     public interface BasicSignalTestRemote{
 
         @RemoteMember("emptySignal")

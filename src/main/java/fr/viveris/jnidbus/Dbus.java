@@ -1,6 +1,3 @@
-/* Copyright 2019, Viveris Technologies <opensource@toulouse.viveris.fr>
- * Distributed under the terms of the Academic Free License.
- */
 package fr.viveris.jnidbus;
 
 import fr.viveris.jnidbus.bindings.bus.Connection;
@@ -123,6 +120,30 @@ public class Dbus implements AutoCloseable {
             }
             this.dispatchers.put(handlerAnnotation.path(),dispatcher);
         }
+    }
+
+    public void removeHandler(GenericHandler handler){
+        //get annotation
+        Handler handlerAnnotation = handler.getClass().getAnnotation(Handler.class);
+        if(handlerAnnotation == null) throw new IllegalStateException("The given handler does not have the Handler annotation");
+
+        Dispatcher dispatcher = this.dispatchers.get(handlerAnnotation.path());
+        if(dispatcher == null) return;
+
+        //get all criteria provided by this handler
+        HashMap<Criteria, HandlerMethod> criterias = handler.getAvailableCriterias();
+
+        //remove them
+        for(Criteria c : criterias.keySet()){
+            LOG.debug("Removing criteria for {}.{}({}) to dispatcher",handlerAnnotation.interfaceName(),c.getMember(),c.getInputSignature());
+            dispatcher.removeCriteria(handlerAnnotation.interfaceName(),c,criterias.get(c));
+        }
+
+        //unregister dispatcher if there is no more handlers
+        if(dispatcher.isEmpty()){
+            this.eventLoop.removePathHandler(dispatcher);
+        }
+
     }
 
     /**
