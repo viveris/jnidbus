@@ -95,7 +95,7 @@ public class SubObject extends Message{
 
 ### Arrays
 
-DBus array type is mapped to the `List` collection. A List can contain anything serializable, including other lists. As JNIDBus uses reflection to know the type of the List items, the generic type must always be explicitly used in the getters and setters
+The DBus array type is mapped to either the `List` class or to native arrays . A List/array can contain anything serializable, including other lists/arrays. As JNIDBus uses reflection to know the type of the List items, the generic type must always be explicitly used in the getters and setters
 
 *<u>example for a nested list message:</u>*
 
@@ -115,6 +115,32 @@ public class CollectionOfCollectionArray extends Message {
     public void setArray(List<List<Integer>> array) ...
 }
 ```
+
+### Dictionaries (`Maps`)
+
+The DBus arrays of `dict_entries` are mapped to the `Map` class, the key must be a primitive DBus type (refer to the DBus documentation for a definition of primitive) and its value can contain nested objects, arrays or maps.  As for the `List`, the generic types must be explicitly used in the getters/setters.
+
+*<u>example for a map message:</u>*
+
+```java
+@DBusType(
+    /* This signature correspond to an array containing dict_entries of a string and an        * integer. In the java world, it's a Map with a string as key and integers as values
+     */
+    signature = "a{si}",
+    fields = "map"
+)
+public class MapMessage extends Message {
+    private Map<String,Integer> map;
+
+    //always explicitly give the precise generic type
+    public Map<String,Integer> getMap() ...
+        
+	//for setters too
+    public void setMap(Map<String,Integer> map) ...
+}
+```
+
+
 
 ### The EmptyMessage
 
@@ -344,19 +370,22 @@ suspend fun suspendingDBusCall() : SingleStringMessage{
 
 
 
-## Planned features
+## Planned tasks
 
-- Support `DICT_ENTRY` type
+- Support `OBJECT_PATH` type
+- Refactor `serialization.cpp` to use proper OOP and cleanup the code
+- Add the capability to create downcasted typed array in JNI code instead of plain `Object[]` objects
+- Use direct `ByteBuffer` instead of plain `Object` arrays to avoid copies.
 
 ## FAQ
 
 ##### Which java versions are compatible?
 
-Java 7 and Java 11 where tested. You will also need `libc` and `libdbus-1` to run the native code 
+Java 8 to Java 11 are tested by the CI, Java 7 should run but is not tested. You will also need `libc` and `libdbus-1` to run the native code 
 
 ##### How fast is this library
 
-I was able to get around 35k complex signals (nested lists and objects) sent and received on a single event loop on my modest i3-4130 work machine. I was able to get around 58k empty signals with the same setup. This should satisfy most of the use cases so unless you really need to push DBus to its limit it's enough.
+I was able to get around 40k/s "complex" signals sent and received on a single event loop on my modest i3-4130 work machine. I was able to get around 95k/s empty signals with the same setup. This should satisfy most of the use cases so unless you really need to push DBus to its limit it's enough.
 
 ##### I found a bug
 

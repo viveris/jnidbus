@@ -3,9 +3,6 @@
  */
 package fr.viveris.jnidbus.test.call;
 
-import fr.viveris.jnidbus.test.common.DBusTestCase;
-import fr.viveris.jnidbus.test.common.Listener;
-import fr.viveris.jnidbus.test.common.DBusObjects.SingleStringMessage;
 import fr.viveris.jnidbus.dispatching.GenericHandler;
 import fr.viveris.jnidbus.dispatching.MemberType;
 import fr.viveris.jnidbus.dispatching.annotation.Handler;
@@ -14,6 +11,9 @@ import fr.viveris.jnidbus.message.Message;
 import fr.viveris.jnidbus.message.PendingCall;
 import fr.viveris.jnidbus.remote.RemoteInterface;
 import fr.viveris.jnidbus.remote.RemoteMember;
+import fr.viveris.jnidbus.test.common.DBusObjects.SingleStringMessage;
+import fr.viveris.jnidbus.test.common.DBusTestCase;
+import fr.viveris.jnidbus.test.common.Listener;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -38,7 +38,7 @@ public class BasicCallTest extends DBusTestCase {
     }
 
     @Test
-    public void callIsSerializedAndUnserialized() throws InterruptedException {
+    public void callIsSerializedAnddeserialized() throws InterruptedException {
         CallHandler handler = new CallHandler();
         this.receiver.addHandler(handler);
         BasicCallTestRemote remoteObj = this.sender.createRemoteObject(this.receiverBusName, "/fr/viveris/jnidbus/test/call/BasicCallTest",BasicCallTestRemote.class);

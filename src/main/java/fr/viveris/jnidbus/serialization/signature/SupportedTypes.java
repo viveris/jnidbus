@@ -3,6 +3,8 @@
  */
 package fr.viveris.jnidbus.serialization.signature;
 
+import java.lang.reflect.Array;
+
 /**
  * List of the types supported by the library, primitive or container
  */
@@ -16,7 +18,9 @@ public enum SupportedTypes {
     DOUBLE('d',Double.TYPE,Double.class),
     ARRAY('a',null,null),
     OBJECT_BEGIN('(',null,null),
-    OBJECT_END(')',null,null);
+    OBJECT_END(')',null,null),
+    DICT_ENTRY_BEGIN('{',null,null),
+    DICT_ENTRY_END('}',null,null);
 
     private char value;
     private Class primitiveType;
@@ -33,6 +37,12 @@ public enum SupportedTypes {
     }
     public Class getPrimitiveType(){ return this.primitiveType; }
     public Class getBoxedType(){ return this.boxedType; }
+    public Class getPrimitiveArrayType(){
+        return Array.newInstance(this.primitiveType, 0).getClass();
+    }
+    public Class getBoxedArrayType(){
+        return Array.newInstance(this.boxedType, 0).getClass();
+    }
 
 
     /**
@@ -53,6 +63,8 @@ public enum SupportedTypes {
             case 'a': return ARRAY;
             case '(': return OBJECT_BEGIN;
             case ')': return OBJECT_END;
+            case '{': return DICT_ENTRY_BEGIN;
+            case '}': return DICT_ENTRY_END;
             default: throw new IllegalArgumentException("No supported type for the given char");
         }
     }
