@@ -16,6 +16,8 @@ JNIdbus uses annotations and reflection to serialize POJO into DBus messages. Th
 
 - Boolean, Byte, Short, Integer, Long, Double and their primitive equivalent
 - String
+- Object path (mapped on the `ObjectPath` class)
+- Enum (transferred either as String or Integer according to the signature of the message)
 - Nested serializable objects
 - Lists
 
@@ -398,7 +400,6 @@ suspend fun suspendingDBusCall() : SingleStringMessage{
 
 ## Planned tasks
 
-- Support `OBJECT_PATH` type
 - Refactor `serialization.cpp` to use proper OOP and cleanup the code
 - Add the capability to create downcasted typed array in JNI code instead of plain `Object[]` objects
 - Use direct `ByteBuffer` instead of plain `Object` arrays to avoid copies.
