@@ -113,12 +113,7 @@ public class Dbus implements AutoCloseable {
         if(dispatcherCreated){
             LOG.debug("Adding dispatcher to event loop and register object path {}",handlerAnnotation.path());
             this.eventLoop.addPathHandler(dispatcher);
-            try {
-                dispatcher.awaitRegistration();
-            } catch (InterruptedException e) {
-                throw new IllegalStateException("Dispatcher registration was interrupted");
-            }
-            this.dispatchers.put(handlerAnnotation.path(),dispatcher);
+            dispatchers.put(handlerAnnotation.path(),dispatcher);
         }
     }
 
