@@ -288,10 +288,10 @@ public interface MyRemoteObject{
 }
 ```
 
-*<u>example of a listener for the above call:</u>*
+*<u>example of a callback for the above call:</u>*
 
 ```java
-public class StringListener implements Promise.Callback<StringMessage>{
+public class StringCallback implements Promise.Callback<StringMessage>{
     @Override
     public void value(StringMessage value, Exception e) {
         //do something
@@ -314,10 +314,10 @@ MyRemoteObject remote = sender.createRemoteObject("receiver.bus.name",
 Promise<StringMessage> pending = remote.call();
 
 //create the listener
-StringListener l = new StringListener();
+StringListener l = new StringCallback();
 
 //bind it, now the listener will be executed when a result arrives
-pending.setListener(l);
+pending.then(l);
 ```
 
 ### Send a Signal
