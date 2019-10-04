@@ -121,7 +121,7 @@ public class Dispatcher {
      * @param msgPointer pointer to the message we should reply to, can be 0
      * @return did the dispatcher handle the message
      */
-    public boolean dispatch(DBusObject args, String interfaceName, String member, long msgPointer) {
+    private boolean dispatch(final DBusObject args, final String interfaceName, final String member, final long msgPointer) {
         LOG.debug("Dispatcher {} received a message for {}.{}({})",this.path,interfaceName,member,args.getSignature());
         //get the list of criteria for the given interface and return false if nothing is found
         ArrayList<Criteria> availableHandlers = this.handlersCriterias.get(interfaceName);
@@ -157,8 +157,19 @@ public class Dispatcher {
                             LOG.debug("Handler returned a result, dispatch the reply: {}",returnObject.toString());
                             this.eventLoop.send(new ReplySendingRequest(((Message)returnObject).serialize(),msgPointer,interfaceName,member,null));
                         }else if(returnObject instanceof Promise){
-                            LOG.debug("Handler returned a promise, set the message pointer and proceed");
-                            ((Promise) returnObject).setMessagePointer(msgPointer,interfaceName,member,this.eventLoop);
+                            //if the handler returned a Promise, set the callback, do not force the dispatch on the E.L
+                            // as we only send one message
+                            LOG.debug("Handler returned a promise, set the callback");
+                            ((Promise) returnObject).then( new Promise.Callback<Serializable>() {
+                                @Override
+                                public void value(Serializable value, Exception e) {
+                                    if(e != null){
+                                        Dispatcher.this.eventLoop.send(new ErrorReplySendingRequest(e.getCause(),msgPointer,interfaceName,member,null));
+                                    }else{
+                                        Dispatcher.this.eventLoop.send(new ReplySendingRequest(value.serialize(),msgPointer,interfaceName,member,null));
+                                    }
+                                }
+                            });
                         }else{
                             LOG.error("The handler returned an unknown result ({}), no reply will be sent",returnObject);
                         }
