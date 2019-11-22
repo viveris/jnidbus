@@ -55,14 +55,9 @@ public class EventLoop implements Closeable, Executor {
     private AtomicBoolean isClosed = new AtomicBoolean(true);
 
     /**
-     * used by the JNI to synchronize wakeup call with the event loop state
-     */
-    private final Object wakeupLock = new Object();
-
-    /**
      * Atomic state telling the caller if a call to wakeup is needed for the vent loop to process its call
      */
-    volatile private boolean shouldWakeup = false;
+    private AtomicBoolean shouldWakeup = new AtomicBoolean(true);
 
     /**
      * Thread running the event loop
@@ -228,7 +223,7 @@ public class EventLoop implements Closeable, Executor {
         while(!this.isClosed.get()){
             //from now messages added to the queue by other threads may or may not be added before the tick() call, so we
             //update the flag to make the caller call wakeup
-            this.shouldWakeup = true;
+            this.shouldWakeup.set(true);
 
             //process all the event in queue if possible
             int i = 0;
@@ -386,11 +381,8 @@ public class EventLoop implements Closeable, Executor {
     private void wakeupIfNeeded(){
         //if the call comes from the EventLoop, no wakeup are needed, else check the wakeup flag
         if(this.isCallerOnEventLoop()) return;
-        synchronized (this.wakeupLock){
-            if(shouldWakeup){
-                this.wakeup(this.dBusContextPointer);
-                this.shouldWakeup = false;
-            }
+        else if(this.shouldWakeup.compareAndSet(true,false)){
+            this.wakeup(this.dBusContextPointer);
         }
     }
 

@@ -39,10 +39,8 @@
         epoll_event* epollStruct;
         //JVM event loop object
         jobject eventLoop;
-        //wakeup lock object
-        jobject wakeup_lock;
-        //should wakeup flag
-        jfieldID should_wakeup_flag;
+        //wakeup atomic boolean
+        jobject wakeup_atomic;
         //meta-class cache
         std::map<std::string,jclass> class_cache;
         //method ID cache
