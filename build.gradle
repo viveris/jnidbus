@@ -61,8 +61,15 @@ jmh{
     jmhVersion jmh_version
 }
 
+//generate headers automatically on java > 8 (before javac do not have the -h option)
+compileJava {
+    if(JavaVersion.current() > JavaVersion.VERSION_1_8){
+        options.compilerArgs += ["-h", file("src/main/jni/src/headers")]
+    }
+}
+
 //add task for JNI code compilation
-task compileJNI(type: Exec) {
+task compileJNI(type: Exec, dependsOn: compileJava) {
     workingDir project.projectDir
     commandLine "${project.projectDir}/src/scripts/compileJNI.sh"
 }

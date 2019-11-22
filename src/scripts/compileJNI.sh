@@ -1,30 +1,33 @@
 #!/usr/bin/env bash
 
-JAVAH="/usr/lib/jvm/java-7-openjdk/bin/javah"
+JAVAH="$JAVA_HOME/bin/javah"
 
 echo "* going into source folder"
 cd ./src/main
 
-##Find every file in the folder and every subfolder with a limit of 10 subfolder, do it asynchronously
-rm -rf ./h
-echo "* generating headers for all classes"
+if test -f "$JAVAH"; then
 
-for entry in $(find ./java/fr/viveris/jnidbus/bindings -maxdepth 10 -type f)
-do
-    ##trim ".java"
-    FILE="${entry%.java}"
-    FILE="${FILE#./java/}"
-    FILE=${FILE//[\/]/.}
-    echo "  - processing class $FILE"
-    $JAVAH -d ./h -jni -classpath ./java $FILE
-done
+  ##Find every file in the folder and every subfolder with a limit of 10 subfolder, do it asynchronously
+  rm -rf ./h
+  echo "* generating headers for all classes"
 
-echo "* filtering empty headers (might display an error if all headers contain functions)"
-find ./h/* -type f -print0 | xargs --null grep -Z -L 'JNIEXPORT' | xargs --null rm
+  for entry in $(find ./java/fr/viveris/jnidbus/bindings -maxdepth 10 -type f)
+  do
+      ##trim ".java"
+      FILE="${entry%.java}"
+      FILE="${FILE#./java/}"
+      FILE=${FILE//[\/]/.}
+      echo "  - processing class $FILE"
+      $JAVAH -d ./h -jni -classpath ./java $FILE
+  done
 
-echo "* moving files in jni folder"
-mv ./h/*.h ./jni/src/headers/
-rmdir ./h
+  echo "* filtering empty headers (might display an error if all headers contain functions)"
+  find ./h/* -type f -print0 | xargs --null grep -Z -L 'JNIEXPORT' | xargs --null rm
+
+  echo "* moving files in jni folder"
+  mv ./h/*.h ./jni/src/headers/
+  rmdir ./h
+fi
 
 echo "* generating Makefile"
 cd jni
